@@ -1,0 +1,1948 @@
+emulate -R zsh -u
+
+#{{{ Non-interactive shells should skip this script
+
+# Apparently required for `scp`.
+if [[ $- != *i* ]] {
+	return
+}
+
+#}}}
+#{{{ Timing, start
+
+local -F SECONDS
+
+local -F ZSHRC_start_time=$SECONDS
+
+# If this is non-null, it overrides all the other report thresholds below.
+local ZSHRC_runtime_report_threshold_override=
+
+# Minimum duration, in seconds, for which a section of this `zshrc` script
+# must run for that section’s run-time to be reported to the user.
+local -F ZSHRC_rc_section_runtime_report_threshold=\
+${ZSHRC_runtime_report_threshold_override:-0.125}
+
+# Minimum duration, in seconds, for which this `zshrc` script must run for its
+# (mostly) total run-time to be reported to the user.
+local -F ZSHRC_rc_total_runtime_report_threshold=\
+${ZSHRC_runtime_report_threshold_override:-1}
+
+# Minimum quantity of seconds by which the (mostly) total run-time of this
+# `zshrc` script must exceed the sum of the reported run-times of its sections
+# for that discrepancy to be reported to the user.
+local -F ZSHRC_rc_total_runtime_variance_report_threshold=\
+${ZSHRC_runtime_report_threshold_override:-0.25}
+
+# Like `ZSHRC_rc_total_runtime_report_threshold`, but for the whole
+# initialization process, not just this `zshrc` script.
+local -F ZSHRC_initztn_total_runtime_report_threshold=\
+${ZSHRC_runtime_report_threshold_override:-0}
+
+# Like `ZSHRC_rc_total_runtime_variance_report_threshold`, but for the whole
+# initialization process, not just this `zshrc` script (though it still
+# compares to the sum of this `zshrc` script’s sections).
+local -F ZSHRC_initztn_total_runtime_variance_report_threshold=\
+${ZSHRC_runtime_report_threshold_override:-0.25}
+
+local -F ZSHRC_mark_time_timer=$ZSHRC_start_time
+local -F ZSHRC_mark_time_total=0
+local -F ZSHRC_mark_time_total_reported=0
+function mark-time {
+	(( $# == 1 || $# == 2 )) || {
+		echo-help 'usage: mark-time <span name> [<duration in seconds>]'
+		return 2
+	}
+
+	local -F t=${2:-$(( $SECONDS - $ZSHRC_mark_time_timer ))}
+
+	(( ZSHRC_mark_time_total += $t ))
+
+	if (( $t >= $ZSHRC_rc_section_runtime_report_threshold )) {
+		mark-time-chirp $1 $t
+		(( ZSHRC_mark_time_total_reported += $t ))
+	}
+
+	if (( $# != 2 )) {
+		ZSHRC_mark_time_timer=$SECONDS
+	}
+}
+
+function mark-time-chirp {
+	if [[ -z ${ZSHRC_QUIET-} ]] {
+		printf '%s---- %- 34s %f s%s\n' \
+			${(%):-'%F{blue}'} $@ ${(%):-'%f'}
+	}
+}
+
+mark-time 'pre-zshrc initialization' $ZSHRC_start_time
+
+mark-time 'timing setup'
+
+#}}}
+#{{{ Shell options
+
+setopt \
+	AppendHistory\
+	AutoCD\
+	AutoList\
+	AutoMenu\
+	AutoNameDirs\
+	AutoParamKeys\
+	AutoPushD\
+	BadPattern\
+	BareGlobQual\
+	CBases\
+	CDableVars\
+	CheckJobs\
+	NoClobber\
+	CombiningChars\
+	CorrectAll\
+	ExtendedGlob\
+	ExtendedHistory\
+	NoFlowControl\
+	NoHUP\
+	HashListAll\
+	HistExpireDupsFirst\
+	HistFcntlLock\
+	HistFindNoDups\
+	HistIgnoreDups\
+	HistIgnoreSpace\
+	HistLexWords\
+	HistNoStore\
+	HistReduceBlanks\
+	HistVerify\
+	IgnoreEOF\
+	InteractiveComments\
+	KshGlob\
+	ListAmbiguous\
+	NoListBeep\
+	ListTypes\
+	LongListJobs\
+	NoMatch\
+	MultIOs\
+	MultiByte\
+	NoNotify\
+	PathDirs\
+	PipeFail\
+	NoPosixBuiltins\
+	PosixIdentifiers\
+	NoPromptSubst\
+	PushDIgnoreDups\
+	REMatchPCRE\
+	NoRmStarSilent\
+	RmStarWait\
+	NoShortLoops\
+	Unset\
+	WarnCreateGlobal\
+
+umask 077
+
+mark-time 'shell options'
+
+#}}}
+#{{{ Initial shell parameters
+
+ZSHRC_PATH="${(%):-%N}"
+
+export ZSHRC_QUIET=${ZSHRC_QUIET-}
+
+if [[ -z $ZSHRC_UNICODE ]] {
+	case $TERM {
+		(xterm-*|screen-256*)
+			ZSHRC_UNICODE='✓'
+	}
+}
+
+local -a ZSHRC_run_at_shell_entry
+
+# Functions to run before prompt is printed.
+local -a precmd_functions
+
+precmd_functions=(
+	reset-window-title
+)
+
+# Functions to run before a command is executed.
+local -a preexec_functions
+
+preexec_functions=(
+)
+
+mark-time 'initial shell parameters'
+
+#}}}
+#{{{ Initial functions
+
+function zshrc-chirp {
+	if [[ $# == 0 || ( $# == 1 && $1 == (-h|--help) ) ]] {
+		echo 'usage: zshrc-chirp <word>...
+If `$ZSHRC_QUIET` is unset or null, runs the <word>s as a command.' >&2
+		return 2
+	}
+	if [[ -z $ZSHRC_QUIET ]] {
+		$@
+	}
+}
+
+function zshrc-chirp-toned {
+	if [[ -z $ZSHRC_QUIET ]] {
+		echo -n ${(%):-'%F{blue}'}
+		$@
+		echo -n ${(%):-'%f'}
+	}
+}
+
+function run-at-shell-entry {
+	(( $# == 1 )) || {
+		echo-help 'usage: run-at-shell-entry <command>'
+		return 2
+	}
+
+	ZSHRC_run_at_shell_entry+=$1
+}
+
+function dbg-echo {
+	echo $@ >&2
+}
+
+function echo-err {
+	echo $@ >&2
+}
+
+function echo-help {
+	echo $@ >&2
+}
+
+function echo-raw {
+	echo -E - $@
+}
+
+function check {
+	emulate -L zsh; set -eu
+
+	(( $# >= 1 && $# <= 2 )) || {
+		echo-help 'Usage: check [<message>] <predicate>
+
+If <predicate>, evaluated as the body of an anonymous function prefixed with
+`emulate -L zsh; setopt ERR_EXIT NO_UNSET PIPE_FAIL;`, returns false (i.e.
+exits with a non-zero exit status code), `check` outputs an error message to
+the standard error stream and returns the same exit status code as
+<predicate>.
+
+<predicate>’s standard input, output, and error streams are bound to the null
+device (`/dev/null`).'
+		return 2
+	}
+
+	local msg='' pred=''
+	if (( $# == 2 )) {
+		msg=$1
+		pred=$2
+	} else {
+		pred=$1
+	}
+
+	eval "() {
+		emulate -L zsh; setopt ERR_EXIT NO_UNSET PIPE_FAIL; $pred
+	} </dev/null &>/dev/null" || {
+		local r=$?
+		echo-err "ASSERTION FAILED: ${msg:-${(q-)pred}}"
+		return $r
+	}
+}
+
+function assert {
+	(( $# >= 1 && $# <= 2 )) || {
+		echo-help 'Usage: assert [<message>] <predicate>
+
+If <predicate>, evaluated as the body of an anonymous function prefixed with
+`emulate -L zsh; setopt ERR_EXIT NO_UNSET PIPE_FAIL;`, returns false (i.e.
+exits with a non-zero exit status code), `assert` outputs an error message to
+the standard error stream and returns the same exit status code as
+<predicate>.
+
+<predicate>’s standard input, output, and error streams are bound to the null
+device (`/dev/null`).'
+		return 2
+	}
+
+	check $@ || exit $?
+}
+
+function any {
+	emulate -L zsh; set -u
+
+	(( $# >= 1 )) || {
+		echo-help 'Usage: any <predicate> [<item>...]
+
+For each <item>, <predicate> is evaluated as a zsh command, with the <item> as
+argument.
+
+If <predicate> returns true for any <item>, `any` returns true. Otherwise, or
+if there are no <item>s, `any` returns false.
+
+Examples:
+  - Check whether any files in the current working directory have names ending
+    with `.txt`:
+      $ '"any '() { [[ \$1 == *.txt ]] }' *"'
+  - Check whether any of the words `Linux`, `illumos`, or `BSD` appear in the
+    output of `uname -a`:
+      $ '"any '() { [[ \$(uname -a) =~ \$1 ]] }' Linux illumos BSD"'
+
+See also: `all`'
+		return 2
+	}
+
+	for item (${@:2}) {
+		if {eval "$1 ${(q)item}"} {
+			return 0
+		}
+	}
+	return 1
+}
+check 'any "() { [[ \$(echo foo illumos bar) =~ \$1 ]] }" Linux illumos BSD'
+
+function all {
+	emulate -L zsh; set -u
+
+	(( $# >= 1 )) || {
+		echo-help 'Usage: all <predicate> [<item>...]
+
+For each <item>, <predicate> is evaluated as a zsh command, with the <item> as
+argument.
+
+If <predicate> returns false for any <item>, `all` returns false. Otherwise,
+or if there are no <item>s, `all` returns true.
+
+Examples:
+  - Check whether all files in the current working directory have names ending
+    with `.txt`.
+      $ '"all '() { [[ \$1 == *.txt ]] }' *"'
+  - Check whether all of the words `Linux`, `illumos`, and `BSD` appear in the
+    file `foo.mkd`:
+      $ '"all '() { [[ \$(<foo.mkd) =~ \$1 ]] }' Linux illumos BSD"'
+
+See also: `any`'
+		return 2
+	}
+
+	for item (${@:2}) {
+		if {! eval "$1 ${(q)item}"} {
+			return 1
+		}
+	}
+	return 0
+}
+check 'all "() {
+	[[ \$(echo Linux foo illumos bar BSD) =~ \$1 ]]
+}" Linux illumos BSD'
+
+function first-where {
+	(( $# >= 1 )) || {
+		echo-help 'Usage: first-where <predicate> [<item>...]'
+		return 2
+	}
+
+	any '() { { '"$1"' $1 } && echo-raw $1 }' ${@:2}
+}
+check '[[ $(first-where "test Idris =" Rust Idris Mercury) == Idris ]]'
+
+function take-while {
+	(( $# >= 1 )) || {
+		echo-help 'Usage: take-while <predicate> [<item>...]'
+		return 2
+	}
+
+	all '() { { '"$1"' $1 } && echo-raw $1 }' ${@:2}
+	true
+}
+check "[[ \$(take-while 'test Eff !=' ML OCaml Eff) == \$'ML\nOCaml' ]]"
+
+function filter {
+	(( $# >= 1 )) || {
+		echo-help 'Usage: filter <predicate> [<item>...]'
+		return 2
+	}
+
+	for item (${@:2}) {
+		if {eval "$1 ${(q)item}"} {
+			echo-raw $item
+		}
+	}
+}
+check "[[ \$(filter 'test 5 -gt' 1 7 2 6) == \$'1\n2' ]]"
+
+function file-qualifies {
+	emulate -L zsh; set -eu
+
+	(( $# == 2 )) || {
+		echo-help 'Usage: file-qualifies <glob qualifiers> <file>'
+		return 2
+	}
+
+	local quals=$1 file=$2
+
+	[[ -e $file ]] || {
+		echo-err 'error: File '"${(q-)file}"' not found.'
+		return 3
+	}
+
+	[[ $(echo $file(N$quals)) == $file ]]
+}
+
+function files-qualify {
+	(( $# >= 2 )) || {
+		echo-help 'Usage: files-qualify <glob qualifiers> <file>...'
+		return 2
+	}
+
+	local quals=$1
+
+	all 'file-qualifies $quals' ${@:2}
+}
+
+function qualifying-files {
+	(( $# >= 1 )) || {
+		echo-help 'Usage: qualifying-files <glob qualifiers> [<file>...]'
+		return 2
+	}
+
+	local quals=$1
+
+	filter 'file-qualifies $quals' ${@:2}
+}
+
+# TODO: Rewrite the functions below in this section to use the new
+# `file-qualifies`, where applicable. Also maybe move them to a later section,
+# given that `file-qualifies` supersedes them and renders them unnecessary as
+# Initial Functions.
+
+function cmd-exists {
+	(( $# == 1 )) || {
+		echo-help 'Usage: cmd-exists <name>'
+		return 2
+	}
+
+	which -- $1 >'/dev/null'
+}
+
+function executable-exists {
+	(( $# == 1 )) || {
+		echo-help 'Usage: executable-exists <name>'
+		return 2
+	}
+
+	which -p -- $1 >'/dev/null'
+}
+
+function which-if-any {
+	which $@ >'/dev/null' &&
+		which $@
+}
+
+function is-zsh-fn {
+	(( $# == 1 )) || {
+		echo-help 'Usage: is-zsh-fn <name>'
+		return 2
+	}
+
+	[[ $(type -w $1) == "$1: function" ]]
+}
+
+function first-cmd-of {
+	first-where cmd-exists $@
+}
+
+function array-index-of {
+	(( $# >= 1 )) || {
+		echo 'usage: array-index-of <string> [<array element>...]'
+		return 2
+	}
+
+	local target=$1
+
+	integer i=0
+
+	for element (${@:2}) {
+		(( ++i ))
+
+		if [[ $element == $target ]] {
+			echo $i
+			return 0
+		}
+	}
+	return 1
+}
+check '[[ $(array-index-of Idris Rust Idris Mercury) == 2 ]]'
+
+function path-lookup {
+	emulate -L zsh -eu
+
+	(( $# >= 2 )) || {
+		echo-help 'usage: path-lookup <test type> <file> <dir to search>...
+       path-lookup ([) <test type> <file>... (]) <dir to search>...'
+		return 2
+	}
+
+	if [[ $1 != '[' ]] {
+		local test=$1 file=$2
+
+		any '() {
+			[[ '"${(q)test}"' "$1/$file" ]] && echo -E "$1/$file"
+		}' ${@:2}
+	} else {
+		local test=$2
+		local -a files dirs
+		integer files_break=$(array-index-of ']' $@)
+
+		files=(${@: 3 : files_break - 3 })
+		dirs=(${@: files_break + 1 })
+
+		any '() {
+			any "path-lookup \$test $1" $dirs
+		}' $files
+	}
+}
+
+function PATH-lookup {
+	(( $# == 3 )) || {
+		echo-help 'usage: PATH-lookup <test type> <file> <search path>'
+		return 2
+	}
+
+	path-lookup $1 $2 ${(s.:.)3}
+}
+
+function file-is-an-executable {
+	(( $# == 1 )) || {
+		echo 'usage: file-is-an-executable <file>' >&2
+		return 2
+	}
+
+	[[ -x $1 && ! -d $1 ]]
+}
+
+function have-GNU-system {
+	[[ $(uname -a) == (#i)*GNU* ]]
+}
+
+function have-Darwin-system {
+	[[ $(uname -a) == (#i)*Darwin* ]]
+}
+
+function have-MacPorts {
+	[[ -d '/opt/local/etc/macports' ]] &&
+	[[ -x '/opt/local/bin/port'     ]]
+}
+
+function get-owner-id {
+	emulate -L zsh
+	setopt ExtendedGlob
+
+	# Resolve <file> to an absolute path, in case it begins with `-`.
+	local type=$1 f=${2:a}
+
+	[[ $# == 2 && $type == [ug] ]] || {
+		echo 'usage: get-owner-id (u|g) <file>' >&2
+		return 2
+	}
+
+	for stat ({z,}stat) {
+		if [[ $(type -w $stat) == "$stat: builtin" ]] {
+			builtin $stat "+${type}id" $f
+			return $?
+		}
+	}
+
+	local stat_arg
+	if {have-GNU-system} {
+		stat_arg='-c'
+	} else {
+		stat_arg='-f'
+	}
+
+	for stat ({/usr,}/bin/stat) {
+		if [[ $(type -w $stat) == "$stat: command" ]] {
+			$stat $stat_arg "%${type}" $f
+			return $?
+		}
+	}
+}
+
+function get-owner-uid {
+	(( $# == 1 )) || {
+		echo 'usage: get-owner-uid <file>' >&2
+		return 2
+	}
+
+	get-owner-id u $1
+}
+
+function get-owner-gid {
+	(( $# == 1 )) || {
+		echo 'usage: get-owner-gid <file>' >&2
+		return 2
+	}
+
+	get-owner-id g $1
+}
+
+function file-is-owned-by-me-or-root {
+	(( $# == 1 )) || {
+		echo 'usage: file-is-owned-by-me-or-root <file>' >&2
+		return 2
+	}
+
+	[[ -O $1 ]] || [[ $(get-owner-uid $1) == 0 ]]
+}
+
+function file-is-not-writable-to-others {
+	(( $# == 1 )) || {
+		echo 'usage: file-is-not-writable-to-others <file>' >&2
+		return 2
+	}
+
+	file-qualifies 'f:go-w:' $1
+}
+
+function file-is-not-accessible-to-others {
+	(( $# == 1 )) || {
+		echo 'usage: file-is-not-accessible-to-others <file>' >&2
+		return 2
+	}
+
+	file-qualifies 'f:go-rwx:' $1
+}
+
+function file-is-secure {
+	(( $# == 1 )) || {
+		echo 'Usage: file-is-secure <file>
+
+If <file> is owned by the invoking user or by the root user (UID 0), and is
+not writable to users other than its owner, returns true; otherwise, returns
+false.
+
+Note: Returns true even if <file> is not writable to its owner.' >&2
+		return 2
+	}
+
+	file-is-owned-by-me-or-root $1 &&
+		file-is-not-writable-to-others $1
+}
+
+function file-is-private {
+	(( $# == 1 )) || {
+		echo 'Usage: file-is-private <file>
+
+If <file> is owned by the invoking user or by the root user (UID 0), and is
+not readable, writable, or executable to users other than its owner, returns
+true; otherwise, returns false.
+
+Note: Returns true even if <file> is not readable, writable, or executable to
+its owner.' >&2
+		return 2
+	}
+
+	file-is-owned-by-me-or-root $1 &&
+		file-is-not-accessible-to-others $1
+}
+
+function select-secure-executable {
+	emulate -L zsh; set -u
+
+	{ (( $# >= 3 )) && [[ $1 == -[-weq] ]] } || {
+		echo-help 'Usage: select-secure-executable (-w | -e | -q | --) <name> <executable>...
+
+Prints, to the standard output stream, the first <executable> that:
+  - exists, and
+  - is executable by the current user, and
+  - is secure (owned by the current user or by the root (UID 0) user, and not
+    writable to users other than its owner).
+
+If `-w` is given, then a warning message will be emitted, to the standard
+error stream, for each <executable> that exists and is executable by the
+current user but is not secure; and this function’s exit status code will be
+zero if a <executable> is printed, and non-zero otherwise.
+
+If `-e` is given, then the presence of an <executable> that exists and is
+executable by the current user but is not secure results in this function
+emitting an error message, to the standard error stream, and exiting with a
+non-zero exit status code.
+
+`-q` has the same effect as `-w`, except that this function will not emit any
+warnings about insecure executables.
+
+`--` has the same effect as `-w`, at least for now.
+
+<name> is the name of what all the given executables are supposed to
+implement, to be used in warning messages and error messages.
+
+If `+` appears as an <executable>, it will be expanded to all the executables
+found by `which -ap -- <name>`.'
+		return 2
+	}
+
+	local fail_type=$1 name=$2
+	local -aU exes secure_exes insecure_exes
+
+	if [[ $fail_type == '--' ]] {
+		fail_type='-w'
+	}
+
+	for exe (${@:3}) {
+		if [[ $exe == '+' ]] {
+			if {executable-exists $name} {
+				exes+=(${(f)"$(which-if-any -ap -- $name)"})
+			}
+		} else {
+			exes+=$exe
+		}
+	}
+
+	for exe ($exes) {
+		if [[ -x $exe ]] {
+			if { file-is-secure $exe } {
+				secure_exes+=$exe
+			} else {
+				insecure_exes+=$exe
+			}
+		}
+	}
+
+	if [[ $fail_type != '-q' ]] {
+		local errfmt=${(%):-'%B%F{red}'}
+		local infofmt=${(%):-'%B%F{cyan}'}
+		local unfmt=${(%):-'%f%b'}
+
+		for exe ($insecure_exes) {
+			echo-err "${errfmt}SECURITY WARNING: Available \`${name}\` executable \`${(q)exe}\` is not secure!${unfmt}"
+
+			if { ! file-is-owned-by-me-or-root $exe } {
+				echo-err "${errfmt}    - The file is not owned by you, nor is it owned by the root user.${unfmt}"
+			}
+
+			if { ! file-is-not-writable-to-others $exe } {
+				echo-err "${errfmt}    - The file can be modified by users other than its owner.${unfmt}"
+			}
+		}
+
+		if (( ${#insecure_exes} > 0 && ${#secure_exes} > 0 )) {
+			echo-err "${infofmt}However, the following \`${name}\` executables do appear to be decently secure:${unfmt}"
+
+			for exe ($secure_exes) {
+				echo-err "${infofmt}    - ${(q)exe}${unfmt}"
+			}
+
+			if [[ $fail_type == '-e' ]] {
+				echo-err "${infofmt}Until this security issue is fixed, try using one of the more secure executables.${unfmt}"
+			}
+		} elif (( ${#insecure_exes} > 0 )) {
+			echo-err "${errfmt}Unfortunately, there do not appear to be any secure \`${name}\` executables available.${unfmt}"
+		}
+	}
+
+	if { [[ $fail_type == '-e' ]] && (( ${#insecure_exes} > 0 )) } {
+		return 1
+	}
+
+	local exe=${secure_exes[1]-}
+
+	if [[ -n $exe ]] {
+		echo-raw $exe
+		return $?
+	} else {
+		return 1
+	}
+}
+
+function run-by-unambiguous-basename {
+	emulate -L zsh; set -u
+
+	(( $# >= 1 )) || {
+		echo-help 'Usage: run-by-unambiguous-basename <command> [<argument>...]
+
+Runs <command> by basename alone, in an environment where the directory
+wherein <command> resides is the only directory in the `PATH`.
+
+<command> may be either:
+  - a path to an executable, or
+  - the basename of an executable, to be looked up in the (unaltered) `PATH`.'
+		return 2
+	}
+
+	local cmd=$1
+
+	executable-exists $cmd || {
+		echo-err "error: command not found: $cmd"
+		return 100
+	}
+
+	local exe==$cmd
+
+	local -a path
+
+	path=(${exe:h})
+
+	command ${exe:t} ${@:2}
+}
+
+mark-time 'initial functions'
+
+#}}}
+#{{{ Safety checks
+
+function assert-file-security-property {
+	(( $# == 5 )) || {
+		echo-help 'usage: assert-file-security-property (W|E) <predicate> <file> <file description> <error description>'
+		return 2
+	}
+
+	local type=$1 predicate=$2 f=$3 fdesc=$4 errdesc=$5
+
+	eval "() { $predicate ${(q)f} }" &&
+		return 0
+
+	local z=''
+	if [[ $0 =~ -zsh ]] {
+		z="$0: "
+	}
+
+	case $type {
+		(E) type='ERROR';;
+		(W) type='WARNING';;
+	}
+
+	echo-err -n "${z}SECURITY ${type}: $fdesc"' ('"${(q-)f}"') '"$errdesc"
+	echo-err "${z:+ Aborting.}"
+
+	return 1
+}
+
+function assert-file-is-owned-by-me-or-root {
+	(( $# == 2 )) || {
+		echo-err 'usage: assert-file-is-owned-by-me-or-root <file> <description>'
+		return 2
+	}
+
+	assert-file-security-property E \
+		file-is-owned-by-me-or-root $1 $2 \
+		'is not owned either by you or by the root user!'
+}
+
+function assert-file-is-not-writable-to-others {
+	(( $# == 2 )) || {
+		echo-err 'usage: assert-file-is-not-writable-to-others <file> <description>'
+		return 2
+	}
+
+	assert-file-security-property E \
+		file-is-not-writable-to-others $1 $2 \
+		'can be modified by users other than you!'
+}
+
+function assert-file-is-not-accessible-to-others {
+	(( $# == 2 )) || {
+		echo-err 'usage: assert-file-is-not-accessible-to-others <file> <description>'
+		return 2
+	}
+
+	assert-file-security-property E \
+		file-is-not-accessible-to-others $1 $2 \
+		'can be accessed by users other than you!'
+}
+
+function assert-file-is-secure {
+	(( $# == 2 )) || {
+		echo-err 'usage: assert-file-is-secure <file> <description>'
+		return 2
+	}
+
+	assert-file-is-owned-by-me-or-root $1 $2
+	assert-file-is-not-writable-to-others $1 $2
+}
+
+function assert-file-is-private {
+	(( $# == 2 )) || {
+		echo-err 'usage: assert-file-is-secure <file> <description>'
+		return 2
+	}
+
+	assert-file-is-owned-by-me-or-root $1 $2
+	assert-file-is-not-accessible-to-others $1 $2
+}
+
+mkdir -p ~/.zsh/var
+
+setopt NoFunctionArgZero
+
+assert-file-is-secure ~           'Your `$HOME` directory'         || return 1
+assert-file-is-secure $ZSHRC_PATH 'This `zshrc` script'            || return 1
+assert-file-is-secure ~/.zsh      'Your zsh settings directory'    || return 1
+assert-file-is-secure ~/.zsh/var  'Your zsh data directory'        || return 1
+
+for d ($module_path) {
+	assert-file-is-secure $d  'A zsh `$module_path` directory' || return 1
+}
+for d ($fpath) {
+	assert-file-is-secure $d  'A zsh `$fpath` directory'       || return 1
+}
+
+setopt FunctionArgZero
+
+mark-time 'safety checks'
+
+#}}}
+#{{{ Modules
+
+function zshrc-load-module {
+	emulate -L zsh; set -eu
+
+	(( $# == 1 )) || {
+		echo-help 'usage: zshrc-load-module <module>'
+		return 2
+	}
+
+	local m=$1
+
+	local f=$(path-lookup [ -r $m.{so,bundle,sl} ] $module_path)
+
+	[[ -n $f ]] || {
+		echo-err "error: ${(q-)m} not found in "'$module_path'
+		return 1
+	}
+
+	assert-file-is-secure $f 'A zsh module' || return 4
+
+	[[ ${modules[$m]-} != loaded ]] || return 3
+
+	zmodload $m
+}
+
+for d ($module_path) {
+	for f ($d/zsh/**/(*~example).(so|bundle|sl)) {
+		zshrc-load-module ${${f#$d/}:r}
+	}
+}
+
+mark-time 'module loading'
+
+#}}}
+#{{{ Shell parameters
+
+autoload -Uz colors && colors
+
+# Keep 1000 lines of history within the shell and save it to ~/.zsh_history:
+HISTSIZE=1000
+SAVEHIST=1000
+HISTFILE=~/.zsh/var/history
+
+# Report timing information (like `time`) for all commands that run for at
+# least 16 seconds (of CPU time?).
+REPORTTIME=16
+
+# Do not attempt to spelling-correct words to words beginning with U+002E FULL
+# STOP (e.g., the names of dotfiles) or with U+005F LOW LINE (which are mainly
+# the names of internal (e.g., completion) functions).
+CORRECT_IGNORE='[._]*'
+CORRECT_IGNORE_FILE='[._]*'
+
+export EDITOR=vim
+export SLANG_EDITOR='vim %s +%d'
+export PAGER=$(first-cmd-of vim-pager vimpager less $PAGER more cat)
+export MANPAGER=$(first-cmd-of vim-manpager vimpager less $MANPAGER more cat)
+export BROWSER=$(first-cmd-of elinks w3m lynx links)
+export CC=$(first-cmd-of clang gcc cc)
+export CXX=$(first-cmd-of clang++ g++ c++)
+export MACOSX_DEPLOYMENT_TARGET=10.6
+export LS_COLOR=yes
+export CCACHE_COMPRESS=yes
+# <http://petereisentraut.blogspot.com/2011/09/ccache-and-clang-part-2.html>
+export CCACHE_CPP2=yes
+# Chicken Scheme Compiler
+export CSC_OPTIONS='-cc cc -cxx c++ -ld c++'
+export AUTOSSH_PORT=0
+
+KEYTIMEOUT=25
+READNULLCMD=$PAGER
+
+#{{{ LS_COLORS, LSCOLORS
+
+export LS_COLORS="${${$(echo "
+	# reset
+	rs=${color[none]}
+	# normal (is this different from 'fi'?)
+	no=${color[none]}
+	# file
+	fi=${color[none]}
+	# file with reference count > 1 (multiple hardlinks)
+	mh=${color[underline]}
+	# file that is executable
+	ex=${color[red]}
+	# file that is setuid (u+s)
+	su=${color[bg-red]}
+	# file that is setgid (g+s)
+	sg=${color[bg-cyan]}
+	# file with capability
+	ca=${color[bg-magenta]}
+	# directory
+	di=${color[cyan]}
+	# directory that is sticky (+t)
+	st=${color[bold]};${color[cyan]};${color[bg-blue]}
+	# directory that is other-writable (o+w)
+	ow=${color[bold]};${color[cyan]};${color[bg-yellow]}
+	# directory that is sticky and other-writable
+	tw=${color[bold]};${color[cyan]};${color[bg-green]}
+	# symbolic link
+	ln=${color[magenta]}
+	# symbolic link with missing target (orphan)
+	or=${color[bold]};${color[underline]};${color[blink]};${color[cyan]};${color[bg-magenta]}
+	# missing target of orphan symbolic link (shown by, e.g., 'ls -l')
+	mi=${color[bold]};${color[underline]};${color[magenta]};${color[bg-cyan]}
+	# pipe
+	pi=${color[bold]};${color[yellow]}
+	# socket
+	so=${color[bold]};${color[green]}
+	# door (from Solaris?)
+	do=${color[bold]};${color[red]}
+	# block device
+	bd=${color[standout]};${color[green]}
+	# character device
+	cd=${color[standout]};${color[yellow]}
+")//[[:space:]]#[#][^
+]#[[:space:]]#/:}#:}:"
+
+export LSCOLORS="${${$(echo "
+	# directory (cyan, default: blue)
+	gx
+	# symbolic link (default magenta)
+	fx
+	# socket (bold green, default: green)
+	Cx
+	# pipe (bold brown/yellow, default: brown)
+	Dx
+	# executable (default red)
+	bx
+	# block special (white on green, default: blue on cyan)
+	Hc
+	# character special (white on brown/yellow, default: blue on brown)
+	HD
+	# setuid executable (default black on red)
+	ab
+	# setgid executable (default black on cyan)
+	ag
+	# sticky other-writable directory (bold cyan on green, default: black
+	# on green)
+	Gc
+	# non-sticky other-writable directory (bold cyan on brown/yellow,
+	# default: black on brown)
+	GD
+")//[[:space:]]#[#][^
+]#[[:space:]]#/}#}"
+
+#}}}
+
+# `git-hub` shell environment setup
+if [[ -e ~/src/git-hub ]] {
+	assert-file-is-secure ~/src/git-hub \
+			'The `git-hub` source directory' &&
+		assert-file-is-secure ~/src/git-hub/init \
+			'The `git-hub` shell environment set-up script' &&
+		source ~/src/git-hub/init
+}
+
+# De-duplicate any duplicate elements that may have been introduced into the
+# lookup path arrays (which somehow does happen, despite them being declared
+# `-aU` in my `~/.zshenv`.
+typeset -U path fpath manpath
+
+#{{{ Filter lookup path arrays for security.
+
+# Only include directories that are not (group- or) other-writable...
+   path=(   ${^path}(N/f[o-w]) )
+manpath=(${^manpath}(N/f[o-w]) )
+  fpath=(  ${^fpath}(N/f[go-w]))
+# ...and are owned by the current user or by root.
+   path=(   ${^path}(NU)     ${^path}(Nu0))
+manpath=(${^manpath}(Nu0) ${^manpath}(NU) )
+  fpath=(  ${^fpath}(NU)    ${^fpath}(Nu0))
+
+#}}}
+
+mark-time 'shell parameters'
+
+#}}}
+#{{{ Shell prompts
+
+precmd_functions=(
+	save-cmd-exit-status-code
+	$precmd_functions
+	set-dynamic-prompts
+)
+
+export ZSHRC_ANON_PROMPT=$ZSHRC_ANON_PROMPT
+export ZSHRC_PROMPT_SIGIL='%#'
+export ZSHRC_NO_RPROMPT=$ZSHRC_NO_RPROMPT
+
+# Disabled because it interferes with completion menus.
+integer ZSHRC_ENABLE_PROMPT_REFRESH=0
+
+#{{{ ZSHRC_PROMPT_STYLE
+
+local -A ZSHRC_PROMPT_STYLE
+local ZSHRC_PROMPT_STYLE_FILE=~/.zsh/prompt-style
+
+if [[ -e $ZSHRC_PROMPT_STYLE_FILE ]] {
+	assert-file-is-secure $ZSHRC_PROMPT_STYLE_FILE \
+		'The prompt style configuration file' &&
+			ZSHRC_PROMPT_STYLE=($(<~/.zsh/prompt-style))
+}
+
+() {
+	for k v (
+		main '%B%F{blue}'
+		info '%B%F{blue}'
+		misc '%F{cyan}'
+		clock '%B%F{blue}'
+		clock-fmt '%F %T'
+		prompt-sigil '%B%F{green}'
+		prompt-sigil-special '${ZSHRC_PROMPT_STYLE[prompt-sigil]-}'
+		select-prompt '${ZSHRC_PROMPT_STYLE[prompt-sigil]-}'
+		cmd-success '%B%F{blue}'
+		cmd-failure '%B%F{red}'
+		#cmd-exit-status-code-radix 10
+		spell-old '${ZSHRC_PROMPT_STYLE[info]-}'
+		spell-new '${ZSHRC_PROMPT_STYLE[info]-}'
+		debug-trace '%F{red}'
+		#misc-info '%L'
+		#unicode yes
+	) {
+		if (( ! ${+ZSHRC_PROMPT_STYLE[$k]} )) {
+			eval 'ZSHRC_PROMPT_STYLE[$k]="'"$v"'"'
+		}
+	}
+}
+
+#}}}
+#{{{ set-dynamic-prompts
+
+function set-dynamic-prompts {
+	# Prompts:
+	# host user % cmd                                                  PS1
+	# ·· Correct ‘cmd’ to ‘dmd’? [(y)es|(n)o|(a)bort|(e)dit]       SPROMPT
+	# ········· % expectation > continuation                           PS2
+	# ···· menu #> selection                                           PS3
+
+	# The functions of this function could presumably also be performed
+	# with the `PROMPT_SUBST` option and all operations implemented in
+	# terms of global parameters and prompting-time parameter expansions
+	# in prompt strings, but such an implementation would presumably have
+	# disadvantages in readability.
+
+	local -A pstyle
+	pstyle=(${(kv)ZSHRC_PROMPT_STYLE})
+
+	local unicode_okay=${pstyle[unicode]-${ZSHRC_UNICODE:+yes}}
+
+	local hostname=${(q-)HOST%.local} username=${(q-)USERNAME}
+
+	if [[ -n $ZSHRC_ANON_PROMPT ]] {
+		hostname=''
+		username=''
+	}
+
+	if [[ -n ${pstyle[hostname-override]-} ]] {
+		hostname=${pstyle[hostname-override]}
+	}
+
+	if [[ -n ${pstyle[username-override]-} ]] {
+		username=${pstyle[username-override]}
+	}
+
+	local hostuser_info="${hostname}${hostname:+ }${username}${username:+ }"
+
+	local cwd_info="${pstyle[info]-}%~%b%f "
+
+	# Main prompt.
+	PS1="${pstyle[main]-}${hostuser_info}${ZSHRC_NO_RPROMPT:+${cwd_info}}%b%f%(!.${pstyle[prompt-sigil-special]-}.${pstyle[prompt-sigil]-})${ZSHRC_PROMPT_SIGIL}%b%f "
+
+	local prev_cmd_status=''
+
+	local exit_success_char='—'
+
+	if [[ $unicode_okay != yes ]] {
+		exit_success_char='-'
+	}
+
+	local exit_status_radix=${pstyle[cmd-exit-status-code-radix]-}
+	local exit_success_mark="${exit_success_char}${exit_success_char}"
+	local exit_failure_fmtspec='!!'
+
+	case $((exit_status_radix)) {
+		(16)
+			exit_failure_fmtspec='%02X'
+			;;
+		(10)
+			exit_failure_fmtspec='%03d'
+			exit_success_mark+=${exit_success_char}
+			;;
+		(8)
+			exit_failure_fmtspec='%03o'
+			exit_success_mark+=${exit_success_char}
+			;;
+	}
+
+	if (( ZSHRC_LAST_CMD_EXIT_STATUS_CODE == 0 )) {
+		prev_cmd_status="${pstyle[cmd-success]-}${exit_success_mark}"
+	} else {
+		prev_cmd_status="${pstyle[cmd-failure]-}$(
+			printf ${exit_failure_fmtspec} \
+				$ZSHRC_LAST_CMD_EXIT_STATUS_CODE)"
+	}
+
+	local prompt_clock="%D{${pstyle[clock-fmt]-}}"
+
+	local misc_info=${pstyle[misc-info]-}
+
+	# Main prompt, right-hand side.
+	typeset -g RPS1="${cwd_info}${prev_cmd_status}%b%f ${pstyle[clock]-}${prompt_clock}%b%f${misc_info:+ }${pstyle[misc]}${misc_info}%b%f"
+
+	if [[ -n $ZSHRC_NO_RPROMPT ]] {
+		RPS1=''
+	}
+
+	# Line continuation prompt.
+	typeset -g PS2="${pstyle[info]-} %b%f${pstyle[prompt-sigil]}%#%b%f ${pstyle[info]}%_%b%f ${pstyle[prompt-sigil]}>%b%f "
+
+	# Line continuation prompt, right-hand side.
+	typeset -g RPS2="${pstyle[info]-}${prompt_clock}${misc_info:+ }${misc_info}%b%f"
+
+	# `select` prompt.
+	typeset -g PS3="${pstyle[select-prompt]-} menu #>%b%f "
+
+	# Debug trace prefix.
+	typeset -g PS4="${pstyle[debug-trace]-}%N:%i %B*%b%f "
+
+	local spl_old="‘%b%f${pstyle[spell-old]-}%R%b%f${pstyle[info]-}’"
+	local spl_new="‘%b%f${pstyle[spell-new]-}%r%b%f${pstyle[info]-}’"
+
+	if [[ $unicode_okay != yes ]] {
+		spl_old=${spl_old//[‘’]/\`}
+		spl_new=${spl_new//[‘’]/\`}
+	}
+
+	# Spelling-correction prompt.
+	typeset -g SPROMPT="${pstyle[info]-} Correct $spl_old to $spl_new? [%Uy%ues|%Un%uo|%Ua%ubort|%Ue%udit]%b%f "
+
+	# If the terminal does not support underlines (as far as zsh knows),
+	# mark the letters to press at a spelling-correction prompt with
+	# parentheses instead.
+	if [[ -z ${(%):-'%U%u'} ]] {
+		SPROMPT=${${SPROMPT//\%U/(}//\%u/)}
+	}
+
+	# Align prompts.
+
+	local spacing_char='·'
+
+	if [[ $unicode_okay != yes ]] {
+		spacing_char='-'
+	}
+
+	local prompt_space="${${hostuser_info% }//?/${spacing_char}}"
+	local end_sp=${hostuser_info:+ }
+
+	PS2="${PS2/ /${prompt_space}${end_sp}}"
+	PS3="${PS3/ /${prompt_space%?????}${end_sp}}"
+	SPROMPT="${SPROMPT/ /${prompt_space%???????}${end_sp}}"
+}
+
+#}}}
+#{{{ zsh-prompt-refresh
+function zsh-prompt-refresh {
+	emulate -L zsh; set -u
+
+	zmodload zsh/sched
+
+	if { [[ ${1-} != 'sched-only' ]] &&
+			(( $ZSHRC_ENABLE_PROMPT_REFRESH )) && zle } {
+		zle reset-prompt
+	}
+
+	local rr=${ZSHRC_PROMPT_STYLE[refresh-rate]-}
+
+	if [[ $rr == <1-> ]] {
+		sched +$rr zsh-prompt-refresh
+	} elif [[ $rr == 'standby' ]] {
+		sched +3 zsh-prompt-refresh
+	}
+}
+
+run-at-shell-entry 'zsh-prompt-refresh sched-only'
+#}}}
+
+mark-time 'shell prompts'
+
+#}}}
+#{{{ Functions and aliases
+
+alias fgrep='grep -F'
+alias egrep='grep -E'
+alias ln='ln -i'
+alias cp='cp -i'
+alias mv='mv -i'
+alias rm='rm -i'
+#alias git='TZ=UTC git'
+alias top='top -i 50 -s 5 -o rsize'
+alias ffmpeg='ffmpeg -v warning'
+alias ffplay='ffplay -v warning'
+alias source-zshrc='source ~/.zshrc'
+#alias cat='echo "\`cat\` has been disabled for security reasons [<https://security.stackexchange.com/a/56309>]; try \`$PAGER\` instead."'
+alias cat='cat -v'
+alias wiktionary='without-REPORTTIME wiktionary'
+alias showterm='in-ghost-shell showterm'
+alias asciinema='in-ghost-shell asciinema'
+
+function run-coreutil {
+	emulate -L zsh; set -u
+
+	(( $# >= 1 )) || {
+		echo-help 'Usage: run-coreutil <name> [<argument>...]'
+		return 2
+	}
+
+	local cmdname=$1 cmd=''
+	local -a args
+
+	args=(${@:2})
+
+	# Here at least, prefer GNU coreutils. If GNU coreutils are not
+	# available, use whatever is available.
+	if {have-GNU-system} {
+		cmd=$cmdname
+	} elif {have-MacPorts-GNU-coreutil $cmdname} {
+		cmd=$(path-to-MacPorts-GNU-coreutil $cmdname)
+	} else {
+		cmd=$cmdname
+	}
+
+	executable-exists $cmd || {
+		echo-err "error: command not found: $cmdname"
+		return 100
+	}
+
+	cmd=$(select-secure-executable -w $cmdname =$cmd +)
+
+	if [[ -n $cmd ]] {
+		run-by-unambiguous-basename $cmd $args
+	} else {
+		return 101
+	}
+}
+
+function have-GNU-coreutil {
+	(( $# == 1 )) || {
+		echo-help 'Usage: have-GNU-coreutil <name>'
+		return 2
+	}
+
+	{ have-GNU-system && cmd-exists $1 } ||
+		have-MacPorts-GNU-coreutil $1
+}
+
+function have-MacPorts-GNU-bin {
+	have-MacPorts &&
+		[[ -d '/opt/local/libexec/gnubin' ]]
+}
+
+function have-MacPorts-GNU-coreutil {
+	(( $# == 1 )) || {
+		echo-help 'Usage: have-MacPorts-GNU-coreutil <name>'
+		return 2
+	}
+
+	have-MacPorts-GNU-bin &&
+		[[ -x "/opt/local/bin/g${1}" ]] &&
+		[[ -x "/opt/local/libexec/gnubin/${1}" ]]
+}
+
+function path-to-MacPorts-GNU-coreutil {
+	echo-raw "/opt/local/libexec/gnubin/${1}"
+}
+
+function ls {
+	local -a ls_cmd gnu_ls_opts
+	local color_opt
+
+	gnu_ls_opts=(
+		--classify --escape --human-readable --time-style='+%F %T'
+		-v
+	)
+
+	if { have-GNU-system } {
+		# Use default (GNU) `ls`.
+		ls_cmd=(=ls $gnu_ls_opts)
+		color_opt='--color=auto'
+	} elif [[ -x '/opt/local/bin/gls' ]] {
+		# Use GNU `ls` installed via MacPorts.
+		ls_cmd=('/opt/local/bin/gls' $gnu_ls_opts)
+		color_opt='--color=auto'
+	} else {
+		# Use default (non-GNU, hopefully BSD-compatible) `ls`.
+		ls_cmd=(=ls -bFhT)
+		color_opt='-G'
+	}
+
+	if [[ $LS_COLOR == yes ]] {
+		ls_cmd+=$color_opt
+	}
+
+	$ls_cmd $@
+}
+
+function la {
+	ls -A $@
+}
+
+function ll {
+	ls -al $@
+}
+
+function lr {
+	ls -Rl $@
+}
+
+function lx {
+	if {have-GNU-coreutil ls} {
+		ls --context -l $@
+	} else {
+		ls '-@elO' $@
+	}
+}
+
+function llwhich {
+	ll $(which-if-any $@)
+}
+
+function vp {
+	if (( $# )) {
+		view $@
+	} else {
+		vim-pager
+	}
+}
+
+function rm {
+	# Prefer GNU `rm` installed via MacPorts, if it’s available;
+	# otherwise, use the system `rm`.
+
+	local macports_grm='/opt/local/bin/grm'
+
+	for rm ($macports_grm =rm) {
+		if [[ -e $rm ]] {
+			[[ -x $rm ]] || {
+				echo-err 'error: '"${(q-)rm}"' exists but is not executable.
+
+Until this permissions error is fixed, try running one of these `rm` commands
+instead:'
+				filter '() {
+					[[ -x $1 ]] && file-is-secure $1
+				}' $(which -a rm)
+
+				return 100
+			}
+
+			assert-file-is-secure $rm 'The `rm` executable' ||
+				return 101
+
+			local -a path
+
+			# Set PATH locally so that only one `rm` executable
+			# will be in PATH, then run `rm`.
+			#
+			# We could instead run the `rm` executable by
+			# providing its full path, but then, at least with GNU
+			# `rm`, its messages would be prefixed with that full
+			# path rather than with merely `rm`, cluttering its
+			# output.
+
+			if [[ $rm == $macports_grm &&
+					-x '/opt/local/libexec/gnubin/rm' ]] {
+				path=('/opt/local/libexec/gnubin')
+			} else {
+				path=(${rm:h})
+			}
+
+			{ assert-file-is-secure "$path" \
+				'The directory containing the `rm` executable'
+			} || return 102
+
+			command rm $@
+
+			return $?
+		}
+	}
+}
+
+function newdir {
+	(( $# == 1 )) || {
+		echo 'usage: newdir <name of new directory>
+Creates a new directory and `cd`s into it.'
+		return 2
+	}
+
+	mkdir $1 && cd $1
+}
+
+function ssh {
+	# `autossh`, but the completion facilities should think that it’s
+	# `ssh`, and complete for it as such.
+	autossh $@
+}
+
+function gpg {
+	local c=$(select-secure-executable -w gpg $(which-if-any -ap gpg2) +)
+
+	if [[ -n $c ]] {
+		$c $@
+	} else {
+		echo-err 'error: No suitable `gpg2` or `gpg` command found.'
+		return 100
+	}
+}
+
+function gpg2 {
+	local c=$(select-secure-executable -w gpg2 +)
+
+	if [[ -n $c ]] {
+		$c $@
+	} else {
+		echo-err 'error: No suitable `gpg2` command found.'
+		return 100
+	}
+}
+
+function vim-ghost {
+	vim -u NONE -i NONE -n --cmd 'source ~/.vim/vimrc-ghost.vim' $@
+}
+
+function vim-encrypt {
+	vim-ghost -x $@
+}
+
+function clang+++ {
+	clang++ -std=c++11 -stdlib=libc++ -Weverything -Werror \
+		-Wno-c++98-compat -Wno-c++98-compat-pedantic $@
+}
+
+function dmd+ {
+	dmd -de -O -fPIC -w $@
+}
+
+function csc+ {
+	csc -O5 -explicit-use $@
+}
+
+function ffinfo {
+	ffprobe -v warning $@ -v info
+}
+
+function cutcol {
+	awk "{print \$$1}"
+}
+
+function filesize {
+	if [[ $(type -w zstat) == 'zstat: builtin' ]] {
+		zstat +size $@
+	} elif [[ $(uname -a) != (#i)*GNU* ]] {
+		=stat -f '%z' $@
+	} else {
+		=stat --format='%s' $@
+	}
+}
+
+function filecreationtime {
+	=stat -t '%F %T %z' -f '%SB' $@
+}
+
+function 7z-a+ {
+	7z a -t7z -mtc -mx -m0=LZMA2 $@
+}
+
+function chrome-open {
+	if {have-Darwin-system} {
+		open -a 'Google Chrome' $@
+	} else {
+		echo-err 'error: `chrome-open` is not yet implemented for non-Darwin systems.'
+		return 2
+	}
+}
+
+function optipng-max {
+	optipng -o7 -zm1-9 $@
+}
+
+function imagemagick-avgcolor {
+	(( $# == 1 )) || {
+		echo 'usage: imagemagick-avgcolor <image>'
+		return 2
+	}
+
+	convert $1 -scale '1x1!' -format '%[pixel:s]' info:-
+	echo
+}
+
+function set-prompt-anon {
+	case "$*" {
+		(yes)
+			ZSHRC_ANON_PROMPT=y;;
+		(no)
+			ZSHRC_ANON_PROMPT=;;
+		(get)
+			if [[ -n $ZSHRC_ANON_PROMPT ]] {
+				echo yes
+			} else {
+				echo no
+			};;
+		(*)
+			echo 'usage: set-prompt-anon (yes|no|get)
+Switch off or on the including of hostname and username in shell prompt.'
+	}
+}
+
+function without-REPORTTIME {
+	local r=$REPORTTIME
+	REPORTTIME=-1
+	$@
+	REPORTTIME=$r
+}
+
+#function imagebin {
+#	# Commented out because imagebin.ca uses a StartSSL certificate, and
+#	# has not changed it post-Heartbleed.
+#	(( $# == 1 )) || {
+#		echo 'usage: imagebin <image file>'
+#		return 2
+#	}
+#	curl -F "file=@$1" 'https://imagebin.ca/upload.php'
+#}
+
+function with-anon-prompt {
+	local ap=$(set-prompt-anon get)
+	set-prompt-anon yes
+	$@
+	set-prompt-anon $ap
+}
+
+function with-quiet-zshrc {
+	local zq=$ZSHRC_QUIET
+	ZSHRC_QUIET=y
+	$@
+	ZSHRC_QUIET=$zq
+}
+
+function in-ghost-shell {
+	with-quiet-zshrc with-anon-prompt $@
+}
+
+function reset-window-title {
+	if [[ -n $TMUX ]] {
+			# Reset tmux window title.
+			echo -n "\ek$ZSH_NAME\e\\"
+			# Reset tmux pane title.
+			echo -n "\e]2;$ZSH_NAME\e\\"
+	}
+
+	if [[ $TERM == *xterm* ]] {
+			# Clear title.
+			echo -n '\e]0;\a'
+	}
+}
+
+integer ZSHRC_LAST_CMD_EXIT_STATUS_CODE=0
+
+function save-cmd-exit-status-code {
+	ZSHRC_LAST_CMD_EXIT_STATUS_CODE=$?
+}
+
+function view-zshfn {
+	(( $# == 1 )) || {
+		echo 'usage: view-zshfn <name>
+Open `$PAGER` with the first occurrence of <name> in `$fpath`.'
+		return 2
+	}
+
+	for dir ($fpath) {
+		local f="$dir/$1"
+
+		if [[ -e $f ]] {
+			if [[ -r $f ]] {
+				$PAGER $f
+				break
+			} else {
+				echo-err "\`${(q)f}\` is not readable; skipping it...."
+			}
+		}
+	}
+}
+
+function test-italics {
+	# <https://code.google.com/p/iterm2/issues/detail?id=391#c12>
+	echo "$(tput sitm)italics$(tput ritm) $(tput smso)standout$(tput rmso)"
+}
+
+function test-xterm256colors {
+	for c ({0..255}) {
+		printf "\e[38;5;${c}m\e[48;5;${c}m%5d  █%s" $c $reset_color
+		(( ($c % 10) == 9 )) && echo
+	}
+	echo $reset_color
+}
+
+mark-time 'functions and aliases'
+
+#}}}
+#{{{ Key bindings
+
+function _call-base-widget-with-buffer {
+	zle .${WIDGET%-buffer} $BUFFER
+}
+
+# In the backward incremental history search triggered with `^R`, have the
+# initial search pattern be what’s already been typed on the command-line, if
+# anything, rather than the empty string.
+#
+# From <ircs://chat.freenode.net/zsh>, 2014-06-26 12:30–13:27 UTC.
+#
+# (See also the requisite line in `bindkey-addc74d`, below.)
+zle -N history-incremental-pattern-search-backward-buffer \
+	_call-base-widget-with-buffer
+bindkey -M isearch '^R' history-incremental-pattern-search-backward-buffer
+
+zle -N insert-unicode-char
+
+function bindkey-addc74d {
+	bindkey -M $1 '^[[H' vi-beginning-of-line # Home
+	bindkey -M $1 '^[[1;2H' vi-first-non-blank # Shift+Home
+	bindkey -M $1 '^[[F' vi-end-of-line # End
+	bindkey -M $1 '^[[1;5D' vi-backward-word # Control+Left
+	bindkey -M $1 '^[[1;5C' vi-forward-word # Control+Right
+	bindkey -M $1 '^[[1;6C' vi-forward-word-end # Shift+Control+Right
+	bindkey -M $1 '^[[1;9D' vi-backward-blank-word # Alt+Left
+	bindkey -M $1 '^[[1;9C' vi-forward-blank-word # Alt+Right
+	bindkey -M $1 '^[[1;10C' vi-forward-blank-word-end # Shift+Alt+Right
+	bindkey -M $1 '^[[A' up-line-or-history # Up
+	bindkey -M $1 '^[[B' down-line-or-history # Down
+	bindkey -M $1 '^[[1;9A' up-line-or-search # Alt+Up
+
+	bindkey -M $1 '^R' history-incremental-pattern-search-backward-buffer
+}
+
+function bindkey-newc74d {
+	bindkey -N $1 $2
+	bindkey-addc74d $1
+}
+
+bindkey-newc74d c74d-emacs emacs
+bindkey-newc74d c74d-viins viins
+bindkey-newc74d c74d-vicmd vicmd
+
+bindkey -M c74d-vicmd '#' vi-pound-insert
+
+bindkey -A c74d-emacs main
+
+mark-time 'key bindings'
+
+#}}}
+#{{{ SSH agent setup
+
+local SSH_AGENT_INFO=~/internal/tmp/ssh-agent
+
+export SSH_AGENT_PID SSH_AUTH_SOCK
+
+function ssh-agent-setup {
+	[[ ! -e $SSH_AGENT_INFO ]] || {
+	echo '`$SSH_AGENT_INFO` ('"${(q-)SSH_AGENT_INFO}"') already exists. Nothing to do.'
+		return 2
+	}
+
+	read answer'?Do you want to start an SSH agent? [yes/no] '
+	case $answer {
+		(yes)
+			if {ssh-agent-init} {
+				echo 'SSH agent started.'
+				return 0
+			} else {
+				local r=$?
+				echo 'error: SSH agent failed to start'
+				return $r
+			};;
+		(no)
+			echo 'Not starting SSH agent.';;
+		(*)
+			echo 'Taking that as a no. Not starting SSH agent.';;
+	}
+	return 2
+}
+
+function ssh-agent-init {
+	ssh-agent >| $SSH_AGENT_INFO
+}
+
+function ssh-agent-valid {
+	[[ $(ps -p $SSH_AGENT_PID -o command= 2> /dev/null) == ssh-agent ]]
+}
+
+function ssh-agent-load {
+	source $SSH_AGENT_INFO > /dev/null
+	ssh-agent-valid
+}
+
+function ssh-agent-connect {
+	[[ -e $SSH_AGENT_INFO ]] || {
+		ssh-agent-setup || {
+			local r=$?
+			SSH_AGENT_INFO=
+			return $r
+		}
+	}
+
+	assert-file-is-private $SSH_AGENT_INFO \
+			'The SSH agent connection information file' || {
+		echo 'Not attempting to connect to SSH agent.' >&2
+		return 3
+	}
+
+	[[ -f $SSH_AGENT_INFO ]] || {
+		echo 'error: `$SSH_AGENT_INFO` ('"${(q-)SSH_AGENT_INFO}"') exists but is not a file.' >&2
+		echo 'Not attempting to connect to SSH agent.' >&2
+		return 4
+	}
+
+	# Try connecting to the agent. If that doesn’t work…
+	ssh-agent-load || {
+		# …start another one.
+		ssh-agent-init
+		# Try connecting to the second agent. If that doesn’t work…
+		ssh-agent-load || {
+			echo '!!!!! SSH agent setup failed !!!!!'
+			return 5
+		}
+	}
+}
+
+ssh-agent-connect
+
+mark-time 'SSH agent'
+
+#}}}
+#{{{ Completion
+
+integer ZSHRC_USE_COMPLETION_CACHE=1
+
+fpath=(~/.zsh/completion $fpath)
+
+zstyle ':completion:*' completer _expand _complete _ignored _correct _approximate
+zstyle ':completion:*' expand suffix
+zstyle ':completion:*' file-sort name
+zstyle ':completion:*' format 'Completing %d'
+zstyle ':completion:*' group-name ''
+zstyle ':completion:*' list-colors ${(s.:.)LS_COLORS}
+zstyle ':completion:*' list-suffixes yes
+zstyle ':completion:*' matcher-list '' '+m:{[:lower:]}={[:upper:]}' '+r:|[._-]=* r:|=*' '+l:|=* r:|=*'
+zstyle ':completion:*' menu yes select interactive
+zstyle ':completion:*' preserve-prefix '//[^/]##/'
+zstyle ':completion:*' remote-access no
+zstyle ':completion:*' select-prompt '%SScrolling active: current selection at %p%s'
+zstyle ':completion:*' squeeze-slashes yes
+zstyle ':completion:*' verbose yes
+zstyle ':completion:*:sudo:*' command-path /usr/local/sbin \
+                                           /usr/local/bin  \
+                                           /usr/sbin       \
+                                           /usr/bin        \
+                                           /sbin           \
+                                           /bin            \
+                                           /usr/X11/bin
+zstyle ':completion:*:*:kill:*:processes' list-colors '=(#b) #([0-9]#)*=0=01;31'
+zstyle ':completion:*:kill:*' command 'ps -u $USER -o pid,%cpu,tty,cputime,cmd'
+
+autoload -Uz compinit
+() {
+	local d=''
+	if (( ! $ZSHRC_USE_COMPLETION_CACHE )) {
+		d='-D'
+	}
+	if { is-zsh-fn compinit } {
+		compinit -d ~/.zsh/var/completion-cache $d
+	}
+}
+
+mark-time 'completion'
+
+#}}}
+#{{{ Extensions
+
+#{{{ Auto-suggestions
+# Eats ~90% CPU and is slightly buggy.
+if ((0)) {
+	source ~/.zsh/zsh-autosuggestions/autosuggestions.zsh
+
+	# Enable auto-suggestions automatically
+	function zle-line-init {
+		zle autosuggest-start
+	}
+	zle -N zle-line-init
+
+	bindkey '^[S' autosuggest-toggle
+}
+#}}}
+
+#{{{ Syntax highlighting
+# Must be at the end of this file, allegedly.
+# Slightly buggy.
+if ((0)) {
+	source ~/.zsh/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
+}
+#}}}
+
+mark-time 'extensions'
+
+#}}}
+#{{{ Delayed commands
+
+for cmd ($ZSHRC_run_at_shell_entry) {
+	eval $cmd
+}
+
+mark-time 'delayed commands'
+
+#}}}
+#{{{ Timing, end
+
+local -F ZSHRC_total_time=$(( $SECONDS - $ZSHRC_start_time ))
+
+if (( ($ZSHRC_total_time - $ZSHRC_mark_time_total_reported) \
+		>= $ZSHRC_rc_total_runtime_variance_report_threshold )) {
+	mark-time-chirp 'time unreported in zshrc' \
+		$(( $ZSHRC_total_time - $ZSHRC_mark_time_total_reported ))
+}
+
+if (( $ZSHRC_total_time >= $ZSHRC_rc_total_runtime_report_threshold )) {
+	mark-time-chirp "total zshrc run-time" $ZSHRC_total_time
+}
+
+local -F ZSHRC_unreported_initztn_time=$(($SECONDS \
+	- $ZSHRC_mark_time_total_reported))
+if (( $ZSHRC_unreported_initztn_time \
+		>= $ZSHRC_initztn_total_runtime_variance_report_threshold )) {
+	mark-time-chirp 'time unreported in initialization' \
+		$ZSHRC_unreported_initztn_time
+}
+
+if (( $SECONDS >= $ZSHRC_initztn_total_runtime_report_threshold )) {
+	mark-time-chirp 'total initialization run-time' $SECONDS
+}
+
+#}}}
+
+set +eu
+# vim: shiftwidth=8

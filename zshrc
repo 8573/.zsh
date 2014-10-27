@@ -1086,6 +1086,8 @@ export ZSHRC_NO_RPROMPT=$ZSHRC_NO_RPROMPT
 # Disabled because it interferes with completion menus.
 integer ZSHRC_ENABLE_PROMPT_REFRESH=0
 
+readonly ZSHRC_default_TIMEFMT=$TIMEFMT
+
 #{{{ ZSHRC_PROMPT_STYLE
 
 local -A ZSHRC_PROMPT_STYLE
@@ -1254,6 +1256,61 @@ function set-dynamic-prompts {
 	PS2="${PS2/ /${prompt_space}${end_sp}}"
 	PS3="${PS3/ /${prompt_space%?????}${end_sp}}"
 	SPROMPT="${SPROMPT/ /${prompt_space%???????}${end_sp}}"
+
+	# `time`/`REPORTTIME` report format
+
+	# Because, in the current format of the `prompt-style` file, the
+	# values of entries cannot contain whitespace, the following
+	# translations will be performed on the value of a `time-report-fmt`
+	# entry in the `prompt-style` file:
+	#
+	#   - Low-lines not enclosed in parentheses (`_`) will be translated
+	#     to spaces.
+	#
+	#   - Low-lines enclosed in parentheses (`(_)`) will be translated to
+	#     horizontal tabs.
+	#
+	# Furthermore, because UTF-8–encoded non–US-ASCII Unicode code-points
+	# are not presently supported in `TIMEFMT` (see also the function
+	# `have-zsh-supporting-Unicode-TIMEFMT`), the following translations
+	# will also be performed on the value of a `time-report-fmt` entry in
+	# the `prompt-style` file unless UTF-8–encoded non–US-ASCII Unicode
+	# code-points appear to be supported in `TIMEFMT`:
+	#
+	#   - Typographical single quotation marks (`‘`, `’`) will be
+	#     translated to grave accents (`` ` ``).
+	#
+	#   - Typographical double quotation marks (`“`, `”`) will be
+	#     translated to straight double quotation marks (`"`).
+	#
+	#   - Em-dashes (`—`) will be translated to double hyphen-minuses
+	#     (`--`).
+
+	local time_fmt=${pstyle[time-report-fmt]-}
+
+	if [[ -n $time_fmt ]] {
+		# A low-line (`_`) may be used in the `time-report-fmt` to
+		# represent a space, because, in the present format of the
+		# `prompt-style` file, values cannot contain spaces.
+		#
+		# A low-line that is enclosed in parentheses (`(_)`) instead
+		# represents a horizontal tab.
+		time_fmt=${${time_fmt//\(_\)/$'\t'}//_/ }
+	} else {
+		time_fmt=$ZSHRC_default_TIMEFMT
+	}
+
+	if { [[ $unicode_okay != yes ]] ||
+			! have-zsh-supporting-Unicode-TIMEFMT} {
+		# If Unicode is not supported, then degrade
+		#   - typographical single quotation marks into grave accents,
+		#   - typographical double quotation marks into plain
+		#     quotation marks, and
+		#   - em-dashes into double hyphen-minuses.
+		time_fmt=${${${time_fmt//[‘’]/\`}//[“”]/\"}//—/--}
+	}
+
+	typeset -g TIMEFMT="${(%)pstyle[info]-}time: ${time_fmt}${(%):-%b%f}"
 }
 
 #}}}

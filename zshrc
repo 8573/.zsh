@@ -476,7 +476,7 @@ function array-index-of {
 check '[[ $(array-index-of Idris Rust Idris Mercury) == 2 ]]'
 
 function path-lookup {
-	emulate -L zsh -eu
+	emulate -L zsh; set -eu
 
 	(( $# >= 2 )) || {
 		echo-help 'usage: path-lookup <test type> <file> <dir to search>...

@@ -218,7 +218,7 @@ function echo-raw {
 }
 
 function check {
-	emulate -L zsh; set -eu
+	emulate -L zsh; set -u
 
 	(( $# >= 1 && $# <= 2 )) || {
 		echo-help 'Usage: check [<message>] <predicate>
@@ -373,7 +373,7 @@ function filter {
 check "[[ \$(filter 'test 5 -gt' 1 7 2 6) == \$'1\n2' ]]"
 
 function file-qualifies {
-	emulate -L zsh; set -eu
+	emulate -L zsh; set -u
 
 	(( $# == 2 )) || {
 		echo-help 'Usage: file-qualifies <glob qualifiers> <file>'
@@ -476,7 +476,7 @@ function array-index-of {
 check '[[ $(array-index-of Idris Rust Idris Mercury) == 2 ]]'
 
 function path-lookup {
-	emulate -L zsh; set -eu
+	emulate -L zsh; set -u
 
 	(( $# >= 2 )) || {
 		echo-help 'usage: path-lookup <test type> <file> <dir to search>...
@@ -895,7 +895,7 @@ mark-time 'safety checks'
 #{{{ Modules
 
 function zshrc-load-module {
-	emulate -L zsh; set -eu
+	emulate -L zsh; set -u
 
 	(( $# == 1 )) || {
 		echo-help 'usage: zshrc-load-module <module>'

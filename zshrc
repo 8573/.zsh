@@ -1673,6 +1673,26 @@ function save-cmd-exit-status-code {
 	ZSHRC_LAST_CMD_EXIT_STATUS_CODE=$?
 }
 
+function have-zsh-supporting-Unicode-TIMEFMT {
+	emulate -L zsh; set -u
+
+	# [2014-10-27 12:43 -0700] At the present time, including octets with
+	# the high bit set (e.g., Unicode code-points not in US-ASCII that are
+	# encoded as UTF-8) in `TIMEFMT` results in garbled output from
+	# `time`.
+	#
+	# Mikael Magnusson (Mikachu) submitted a patch to zsh to fix this
+	# issue, after I brought the issue up in
+	# <ircs://chat.freenode.net/zsh>.
+
+	readonly test_str='‘“Ā–က—𐀀”’'
+
+	[[ $( () {
+			readonly TIMEFMT="$test_str"
+			time =true
+		} 2>&1 ) == "$test_str" ]]
+}
+
 function view-zshfn {
 	(( $# == 1 )) || {
 		echo 'usage: view-zshfn <name>

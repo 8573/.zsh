@@ -12,36 +12,36 @@ if [[ $- != *i* ]] {
 
 local -F SECONDS
 
-local -F ZSHRC_start_time=$SECONDS
+readonly -F ZSHRC_start_time=$SECONDS
 
 # If this is non-null, it overrides all the other report thresholds below.
-local ZSHRC_runtime_report_threshold_override=
+readonly ZSHRC_runtime_report_threshold_override=
 
 # Minimum duration, in seconds, for which a section of this `zshrc` script
 # must run for that section’s run-time to be reported to the user.
-local -F ZSHRC_rc_section_runtime_report_threshold=\
+readonly -F ZSHRC_rc_section_runtime_report_threshold=\
 ${ZSHRC_runtime_report_threshold_override:-0.125}
 
 # Minimum duration, in seconds, for which this `zshrc` script must run for its
 # (mostly) total run-time to be reported to the user.
-local -F ZSHRC_rc_total_runtime_report_threshold=\
+readonly -F ZSHRC_rc_total_runtime_report_threshold=\
 ${ZSHRC_runtime_report_threshold_override:-1}
 
 # Minimum quantity of seconds by which the (mostly) total run-time of this
 # `zshrc` script must exceed the sum of the reported run-times of its sections
 # for that discrepancy to be reported to the user.
-local -F ZSHRC_rc_total_runtime_variance_report_threshold=\
+readonly -F ZSHRC_rc_total_runtime_variance_report_threshold=\
 ${ZSHRC_runtime_report_threshold_override:-0.25}
 
 # Like `ZSHRC_rc_total_runtime_report_threshold`, but for the whole
 # initialization process, not just this `zshrc` script.
-local -F ZSHRC_initztn_total_runtime_report_threshold=\
+readonly -F ZSHRC_initztn_total_runtime_report_threshold=\
 ${ZSHRC_runtime_report_threshold_override:-0}
 
 # Like `ZSHRC_rc_total_runtime_variance_report_threshold`, but for the whole
 # initialization process, not just this `zshrc` script (though it still
 # compares to the sum of this `zshrc` script’s sections).
-local -F ZSHRC_initztn_total_runtime_variance_report_threshold=\
+readonly -F ZSHRC_initztn_total_runtime_variance_report_threshold=\
 ${ZSHRC_runtime_report_threshold_override:-0.25}
 
 local -F ZSHRC_mark_time_timer=$ZSHRC_start_time
@@ -53,7 +53,7 @@ function mark-time {
 		return 2
 	}
 
-	local -F t=${2:-$(( $SECONDS - $ZSHRC_mark_time_timer ))}
+	readonly -F t=${2:-$(( $SECONDS - $ZSHRC_mark_time_timer ))}
 
 	(( ZSHRC_mark_time_total += $t ))
 
@@ -245,7 +245,7 @@ device (`/dev/null`).'
 	eval "() {
 		emulate -L zsh; setopt ERR_EXIT NO_UNSET PIPE_FAIL; $pred
 	} </dev/null &>/dev/null" || {
-		local r=$?
+		readonly r=$?
 		echo-err "ASSERTION FAILED: ${msg:-${(q-)pred}}"
 		return $r
 	}
@@ -380,7 +380,7 @@ function file-qualifies {
 		return 2
 	}
 
-	local quals=$1 file=$2
+	readonly quals=$1 file=$2
 
 	[[ -e $file ]] || {
 		echo-err 'error: File '"${(q-)file}"' not found.'
@@ -396,7 +396,7 @@ function files-qualify {
 		return 2
 	}
 
-	local quals=$1
+	readonly quals=$1
 
 	all 'file-qualifies $quals' ${@:2}
 }
@@ -407,7 +407,7 @@ function qualifying-files {
 		return 2
 	}
 
-	local quals=$1
+	readonly quals=$1
 
 	filter 'file-qualifies $quals' ${@:2}
 }
@@ -459,7 +459,7 @@ function array-index-of {
 		return 2
 	}
 
-	local target=$1
+	readonly target=$1
 
 	integer i=0
 
@@ -485,13 +485,13 @@ function path-lookup {
 	}
 
 	if [[ $1 != '[' ]] {
-		local test=$1 file=$2
+		readonly test=$1 file=$2
 
 		any '() {
 			[[ '"${(q)test}"' "$1/$file" ]] && echo -E "$1/$file"
 		}' ${@:2}
 	} else {
-		local test=$2
+		readonly test=$2
 		local -a files dirs
 		integer files_break=$(array-index-of ']' $@)
 
@@ -540,7 +540,7 @@ function get-owner-id {
 	setopt ExtendedGlob
 
 	# Resolve <file> to an absolute path, in case it begins with `-`.
-	local type=$1 f=${2:a}
+	readonly type=$1 f=${2:a}
 
 	[[ $# == 2 && $type == [ug] ]] || {
 		echo 'usage: get-owner-id (u|g) <file>' >&2
@@ -682,7 +682,7 @@ found by `which -ap -- <name>`.'
 		return 2
 	}
 
-	local fail_type=$1 name=$2
+	readonly fail_type=$1 name=$2
 	local -aU exes secure_exes insecure_exes
 
 	if [[ $fail_type == '--' ]] {
@@ -710,9 +710,9 @@ found by `which -ap -- <name>`.'
 	}
 
 	if [[ $fail_type != '-q' ]] {
-		local errfmt=${(%):-'%B%F{red}'}
-		local infofmt=${(%):-'%B%F{cyan}'}
-		local unfmt=${(%):-'%f%b'}
+		readonly errfmt=${(%):-'%B%F{red}'}
+		readonly infofmt=${(%):-'%B%F{cyan}'}
+		readonly unfmt=${(%):-'%f%b'}
 
 		for exe ($insecure_exes) {
 			echo-err "${errfmt}SECURITY WARNING: Available \`${name}\` executable \`${(q)exe}\` is not secure!${unfmt}"
@@ -745,7 +745,7 @@ found by `which -ap -- <name>`.'
 		return 1
 	}
 
-	local exe=${secure_exes[1]-}
+	readonly exe=${secure_exes[1]-}
 
 	if [[ -n $exe ]] {
 		echo-raw $exe
@@ -770,14 +770,14 @@ wherein <command> resides is the only directory in the `PATH`.
 		return 2
 	}
 
-	local cmd=$1
+	readonly cmd=$1
 
 	executable-exists $cmd || {
 		echo-err "error: command not found: $cmd"
 		return 100
 	}
 
-	local exe==$cmd
+	readonly exe==$cmd
 
 	local -a path
 
@@ -797,7 +797,7 @@ function assert-file-security-property {
 		return 2
 	}
 
-	local type=$1 predicate=$2 f=$3 fdesc=$4 errdesc=$5
+	readonly type=$1 predicate=$2 f=$3 fdesc=$4 errdesc=$5
 
 	eval "() { $predicate ${(q)f} }" &&
 		return 0
@@ -902,9 +902,9 @@ function zshrc-load-module {
 		return 2
 	}
 
-	local m=$1
+	readonly m=$1
 
-	local f=$(path-lookup [ -r $m.{so,bundle,sl} ] $module_path)
+	readonly f=$(path-lookup [ -r $m.{so,bundle,sl} ] $module_path)
 
 	[[ -n $f ]] || {
 		echo-err "error: ${(q-)m} not found in "'$module_path'
@@ -1141,9 +1141,9 @@ function set-dynamic-prompts {
 	local -A pstyle
 	pstyle=(${(kv)ZSHRC_PROMPT_STYLE})
 
-	local unicode_okay=${pstyle[unicode]-${ZSHRC_UNICODE:+yes}}
+	readonly unicode_okay=${pstyle[unicode]-${ZSHRC_UNICODE:+yes}}
 
-	local hostname=${(q-)HOST%.local} username=${(q-)USERNAME}
+	readonly hostname=${(q-)HOST%.local} username=${(q-)USERNAME}
 
 	if [[ -n $ZSHRC_ANON_PROMPT ]] {
 		hostname=''
@@ -1158,9 +1158,9 @@ function set-dynamic-prompts {
 		username=${pstyle[username-override]}
 	}
 
-	local hostuser_info="${hostname}${hostname:+ }${username}${username:+ }"
+	readonly hostuser_info="${hostname}${hostname:+ }${username}${username:+ }"
 
-	local cwd_info="${pstyle[info]-}%~%b%f "
+	readonly cwd_info="${pstyle[info]-}%~%b%f "
 
 	# Main prompt.
 	PS1="${pstyle[main]-}${hostuser_info}${ZSHRC_NO_RPROMPT:+${cwd_info}}%b%f%(!.${pstyle[prompt-sigil-special]-}.${pstyle[prompt-sigil]-})${ZSHRC_PROMPT_SIGIL}%b%f "
@@ -1173,7 +1173,7 @@ function set-dynamic-prompts {
 		exit_success_char='-'
 	}
 
-	local exit_status_radix=${pstyle[cmd-exit-status-code-radix]-}
+	readonly exit_status_radix=${pstyle[cmd-exit-status-code-radix]-}
 	local exit_success_mark="${exit_success_char}${exit_success_char}"
 	local exit_failure_fmtspec='!!'
 
@@ -1199,9 +1199,9 @@ function set-dynamic-prompts {
 				$ZSHRC_LAST_CMD_EXIT_STATUS_CODE)"
 	}
 
-	local prompt_clock="%D{${pstyle[clock-fmt]-}}"
+	readonly prompt_clock="%D{${pstyle[clock-fmt]-}}"
 
-	local misc_info=${pstyle[misc-info]-}
+	readonly misc_info=${pstyle[misc-info]-}
 
 	# Main prompt, right-hand side.
 	typeset -g RPS1="${cwd_info}${prev_cmd_status}%b%f ${pstyle[clock]-}${prompt_clock}%b%f${misc_info:+ }${pstyle[misc]}${misc_info}%b%f"
@@ -1248,8 +1248,8 @@ function set-dynamic-prompts {
 		spacing_char='-'
 	}
 
-	local prompt_space="${${hostuser_info% }//?/${spacing_char}}"
-	local end_sp=${hostuser_info:+ }
+	readonly prompt_space="${${hostuser_info% }//?/${spacing_char}}"
+	readonly end_sp=${hostuser_info:+ }
 
 	PS2="${PS2/ /${prompt_space}${end_sp}}"
 	PS3="${PS3/ /${prompt_space%?????}${end_sp}}"
@@ -1268,7 +1268,7 @@ function zsh-prompt-refresh {
 		zle reset-prompt
 	}
 
-	local rr=${ZSHRC_PROMPT_STYLE[refresh-rate]-}
+	readonly rr=${ZSHRC_PROMPT_STYLE[refresh-rate]-}
 
 	if [[ $rr == <1-> ]] {
 		sched +$rr zsh-prompt-refresh
@@ -1310,7 +1310,8 @@ function run-coreutil {
 		return 2
 	}
 
-	local cmdname=$1 cmd=''
+	readonly cmdname=$1
+	local cmd=''
 	local -a args
 
 	args=(${@:2})
@@ -1435,7 +1436,7 @@ function rm {
 	# Prefer GNU `rm` installed via MacPorts, if it’s available;
 	# otherwise, use the system `rm`.
 
-	local macports_grm='/opt/local/bin/grm'
+	readonly macports_grm='/opt/local/bin/grm'
 
 	for rm ($macports_grm =rm) {
 		if [[ -e $rm ]] {
@@ -1500,7 +1501,8 @@ function ssh {
 }
 
 function gpg {
-	local c=$(select-secure-executable -w gpg $(which-if-any -ap gpg2) +)
+	readonly c=$(select-secure-executable \
+		-w gpg $(which-if-any -ap gpg2) +)
 
 	if [[ -n $c ]] {
 		$c $@
@@ -1511,7 +1513,7 @@ function gpg {
 }
 
 function gpg2 {
-	local c=$(select-secure-executable -w gpg2 +)
+	readonly c=$(select-secure-executable -w gpg2 +)
 
 	if [[ -n $c ]] {
 		$c $@
@@ -1610,7 +1612,7 @@ Switch off or on the including of hostname and username in shell prompt.'
 }
 
 function without-REPORTTIME {
-	local r=$REPORTTIME
+	readonly r=$REPORTTIME
 	REPORTTIME=-1
 	$@
 	REPORTTIME=$r
@@ -1627,14 +1629,14 @@ function without-REPORTTIME {
 #}
 
 function with-anon-prompt {
-	local ap=$(set-prompt-anon get)
+	readonly ap=$(set-prompt-anon get)
 	set-prompt-anon yes
 	$@
 	set-prompt-anon $ap
 }
 
 function with-quiet-zshrc {
-	local zq=$ZSHRC_QUIET
+	readonly zq=$ZSHRC_QUIET
 	ZSHRC_QUIET=y
 	$@
 	ZSHRC_QUIET=$zq
@@ -1672,7 +1674,7 @@ Open `$PAGER` with the first occurrence of <name> in `$fpath`.'
 	}
 
 	for dir ($fpath) {
-		local f="$dir/$1"
+		readonly f="$dir/$1"
 
 		if [[ -e $f ]] {
 			if [[ -r $f ]] {
@@ -1755,7 +1757,7 @@ mark-time 'key bindings'
 #}}}
 #{{{ SSH agent setup
 
-local SSH_AGENT_INFO=~/internal/tmp/ssh-agent
+readonly SSH_AGENT_INFO=~/internal/tmp/ssh-agent
 
 export SSH_AGENT_PID SSH_AUTH_SOCK
 
@@ -1772,7 +1774,7 @@ function ssh-agent-setup {
 				echo 'SSH agent started.'
 				return 0
 			} else {
-				local r=$?
+				readonly r=$?
 				echo 'error: SSH agent failed to start'
 				return $r
 			};;
@@ -1800,7 +1802,7 @@ function ssh-agent-load {
 function ssh-agent-connect {
 	[[ -e $SSH_AGENT_INFO ]] || {
 		ssh-agent-setup || {
-			local r=$?
+			readonly r=$?
 			SSH_AGENT_INFO=
 			return $r
 		}
@@ -1918,7 +1920,7 @@ mark-time 'delayed commands'
 #}}}
 #{{{ Timing, end
 
-local -F ZSHRC_total_time=$(( $SECONDS - $ZSHRC_start_time ))
+readonly -F ZSHRC_total_time=$(( $SECONDS - $ZSHRC_start_time ))
 
 if (( ($ZSHRC_total_time - $ZSHRC_mark_time_total_reported) \
 		>= $ZSHRC_rc_total_runtime_variance_report_threshold )) {
@@ -1930,7 +1932,7 @@ if (( $ZSHRC_total_time >= $ZSHRC_rc_total_runtime_report_threshold )) {
 	mark-time-chirp "total zshrc run-time" $ZSHRC_total_time
 }
 
-local -F ZSHRC_unreported_initztn_time=$(($SECONDS \
+readonly -F ZSHRC_unreported_initztn_time=$(($SECONDS \
 	- $ZSHRC_mark_time_total_reported))
 if (( $ZSHRC_unreported_initztn_time \
 		>= $ZSHRC_initztn_total_runtime_variance_report_threshold )) {

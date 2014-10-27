@@ -1635,6 +1635,13 @@ function with-anon-prompt {
 	set-prompt-anon $ap
 }
 
+function with-no-rprompt {
+	readonly nr=$ZSHRC_NO_RPROMPT
+	ZSHRC_NO_RPROMPT=y
+	$@
+	ZSHRC_NO_RPROMPT=$nr
+}
+
 function with-quiet-zshrc {
 	readonly zq=$ZSHRC_QUIET
 	ZSHRC_QUIET=y

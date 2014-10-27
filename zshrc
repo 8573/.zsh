@@ -1434,8 +1434,8 @@ alias source-zshrc='source ~/.zshrc'
 #alias cat='echo "\`cat\` has been disabled for security reasons [<https://security.stackexchange.com/a/56309>]; try \`$PAGER\` instead."'
 alias cat='cat -v'
 alias wiktionary='without-REPORTTIME wiktionary'
-alias showterm='in-ghost-shell showterm'
-alias asciinema='in-ghost-shell asciinema'
+alias showterm='in-ghost-shell with-no-rprompt showterm'
+alias asciinema='in-ghost-shell with-no-rprompt asciinema'
 
 function run-coreutil {
 	emulate -L zsh; set -u

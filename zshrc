@@ -1340,6 +1340,84 @@ run-at-shell-entry 'zsh-prompt-refresh sched-only'
 mark-time 'shell prompts'
 
 #}}}
+#{{{ Command running-time reporting
+
+preexec_functions+=cmd-running-time-reporting-preexec
+precmd_functions+=cmd-running-time-reporting-postexec
+
+local REPORTTIME_TYPE=${REPORTTIME_TYPE:-both}
+
+local -F ZSHRC_last_cmd_preexec_time
+local ZSHRC_cmd_running_time_report_threshold
+integer ZSHRC_cmd_running_time_ready=0
+
+function cmd-running-time-reporting {
+	case "$*" {
+		(help)
+			echo-help 'Command Running-time Reporting System Help
+
+The command running-time reporting system modifies the behavior of the special
+shell parameter `REPORTTIME`, depending on the value of the shell parameter
+`REPORTTIME_TYPE`, which may be `cpu-time`, `run-time`, or `both`.
+
+When `$REPORTTIME_TYPE` is `cpu-time`, the behavior of `REPORTTIME` will be
+left at its default, which is to report running-time information for any
+command that occupies at least `$REPORTTIME` seconds of CPU time.
+
+When `$REPORTTIME_TYPE` is `run-time`, for any command that runs for at least
+`$REPORTTIME` seconds, regardless of how much time the command spent actively
+consuming CPU power, the total running-time of that command will be reported.
+
+When `$REPORTTIME_TYPE` is `both`, both the `cpu-time` and `run-time`
+behaviors will be enabled. This is the default.'
+			return 0
+			;;
+		(*)
+			echo-help 'Usage: cmd-running-time-reporting (help)'
+			return 2
+			;;
+	}
+}
+
+function cmd-running-time-reporting-preexec {
+	typeset -g ZSHRC_cmd_running_time_report_threshold=${REPORTTIME:-0}
+
+	typeset -g REPORTTIME_TYPE=${REPORTTIME_TYPE:-both}
+
+	if [[ $REPORTTIME_TYPE == 'run-time' ]] {
+		typeset -g REPORTTIME=-1
+	}
+
+	typeset -g ZSHRC_last_cmd_preexec_time=${SECONDS:-0}
+}
+
+function cmd-running-time-reporting-postexec {
+	readonly elapsed_time=$(( SECONDS - ZSHRC_last_cmd_preexec_time ))
+
+	typeset -g REPORTTIME_TYPE=${REPORTTIME_TYPE:-both}
+
+	if [[ $REPORTTIME_TYPE == 'run-time' ]] {
+		typeset -g REPORTTIME=$ZSHRC_cmd_running_time_report_threshold
+	}
+
+	if (( ! ZSHRC_cmd_running_time_ready )) {
+		ZSHRC_cmd_running_time_ready=1
+		return
+	}
+
+	if [[ $REPORTTIME_TYPE == (run-time|both) ]] {
+		if (( elapsed_time >=
+				ZSHRC_cmd_running_time_report_threshold )) {
+			zshrc-chirp-toned printf \
+				'total command running-time: %f s\n' \
+				$elapsed_time
+		}
+	} elif [[ $REPORTTIME_TYPE != 'cpu-time' ]] {
+		echo-err 'error: `$REPORTTIME_TYPE` should be `run-time`, `cpu-time`, or `both`. (Try running `cmd-running-time-reporting help` for help.)'
+	}
+}
+
+#}}}
 #{{{ Functions and aliases
 
 alias fgrep='grep -F'

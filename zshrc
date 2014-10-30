@@ -946,6 +946,37 @@ REPORTTIME=16
 CORRECT_IGNORE='[._]*'
 CORRECT_IGNORE_FILE='[._]*'
 
+#{{{ *_POSSIBILITIES
+
+local -a \
+	EDITOR_POSSIBILITIES \
+	PAGER_POSSIBILITIES \
+	MANPAGER_POSSIBILITIES \
+	BROWSER_POSSIBILITIES \
+	CC_POSSIBILITIES \
+	CXX_POSSIBILITIES \
+
+EDITOR_POSSIBILITIES=(
+	'nano' 'vim' 'nvi' 'elvis' 'vi' 'pico' 'emacs' 'joe' 'jed' 'ed'
+	${EDITOR-})
+PAGER_POSSIBILITIES=(
+	'most' 'less' 'more' 'cat'
+	${PAGER-})
+MANPAGER_POSSIBILITIES=(
+	'most' 'less' 'more' 'cat'
+	${MANPAGER-})
+BROWSER_POSSIBILITIES=(
+	'elinks' 'w3m' 'lynx' 'links'
+	${BROWSER-})
+CC_POSSIBILITIES=(
+	'clang' 'gcc' 'cc'
+	${CC-})
+CXX_POSSIBILITIES=(
+	'clang++' 'g++' 'c++'
+	${CXX-})
+
+#}}}
+
 export EDITOR=vim
 export SLANG_EDITOR='vim %s +%d'
 export PAGER=$(first-cmd-of vim-pager vimpager less $PAGER more cat)

@@ -2111,6 +2111,29 @@ for cmd ($ZSHRC_run_at_shell_entry) {
 mark-time 'delayed commands'
 
 #}}}
+#{{{ `zshrc.local`
+
+readonly LOCAL_ZSHRC_PATH=~/.zsh/zshrc.local
+
+() {
+
+if [[ -e $LOCAL_ZSHRC_PATH ]] {
+	assert-file-is-secure $LOCAL_ZSHRC_PATH 'Your `zshrc.local` script' ||
+		return 3
+
+	[[ -r $LOCAL_ZSHRC_PATH ]] || {
+		echo-err 'error: `'"${(q)LOCAL_ZSHRC_PATH}"'` exists but is not readable.'
+		return 4
+	}
+
+	source $LOCAL_ZSHRC_PATH
+}
+
+}
+
+mark-time 'zshrc.local'
+
+#}}}
 #{{{ Timing, end
 
 readonly -F ZSHRC_total_time=$(( $SECONDS - $ZSHRC_start_time ))

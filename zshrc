@@ -977,13 +977,13 @@ CXX_POSSIBILITIES=(
 
 #}}}
 
-export EDITOR=vim
+export EDITOR=$(first-cmd-of $EDITOR_POSSIBILITIES)
 export SLANG_EDITOR='vim %s +%d'
-export PAGER=$(first-cmd-of vim-pager vimpager less $PAGER more cat)
-export MANPAGER=$(first-cmd-of vim-manpager vimpager less $MANPAGER more cat)
-export BROWSER=$(first-cmd-of elinks w3m lynx links)
-export CC=$(first-cmd-of clang gcc cc)
-export CXX=$(first-cmd-of clang++ g++ c++)
+export PAGER=$(first-cmd-of $PAGER_POSSIBILITIES)
+export MANPAGER=$(first-cmd-of $MANPAGER_POSSIBILITIES)
+export BROWSER=$(first-cmd-of $BROWSER_POSSIBILITIES)
+export CC=$(first-cmd-of $CC_POSSIBILITIES)
+export CXX=$(first-cmd-of $CXX_POSSIBILITIES)
 export MACOSX_DEPLOYMENT_TARGET=10.6
 export LS_COLOR=yes
 export CCACHE_COMPRESS=yes

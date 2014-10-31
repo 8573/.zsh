@@ -475,6 +475,17 @@ function array-index-of {
 }
 check '[[ $(array-index-of Idris Rust Idris Mercury) == 2 ]]'
 
+function array-contains {
+	(( $# >= 1 )) || {
+		echo-help 'Usage: array-contains <quarry> [<array element>...]'
+		return 2
+	}
+
+	any "() { [[ ${(q)1} == \$1 ]] }" ${@:2}
+}
+check 'array-contains Idris Rust Idris Mercury'
+check '! array-contains Idris Perl PHP Python'
+
 function path-lookup {
 	emulate -L zsh; set -u
 

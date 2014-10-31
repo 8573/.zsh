@@ -1388,9 +1388,19 @@ preexec_functions+=cmd-running-time-reporting-preexec
 precmd_functions+=cmd-running-time-reporting-postexec
 
 local REPORTTIME_TYPE=${REPORTTIME_TYPE:-both}
+local REPORTTIME_LENGTHY=-1
+local -aU REPORTTIME_LENGTHY_COMMANDS
+
+REPORTTIME_LENGTHY_COMMANDS=(
+	$EDITOR_POSSIBILITIES
+	$PAGER_POSSIBILITIES
+	$MANPAGER_POSSIBILITIES
+	$BROWSER_POSSIBILITIES
+)
 
 local -F ZSHRC_last_cmd_preexec_time
 local ZSHRC_cmd_running_time_report_threshold
+local ZSHRC_cmd_running_time_REPORTTIME_save
 integer ZSHRC_cmd_running_time_ready=0
 
 function cmd-running-time-reporting {
@@ -1411,7 +1421,13 @@ When `$REPORTTIME_TYPE` is `run-time`, for any command that runs for at least
 consuming CPU power, the total running-time of that command will be reported.
 
 When `$REPORTTIME_TYPE` is `both`, both the `cpu-time` and `run-time`
-behaviors will be enabled. This is the default.'
+behaviors will be enabled. This is the default.
+
+For any command listed in the array parameter `REPORTTIME_LENGTHY_COMMANDS`,
+`$REPORTTIME_LENGTHY` will be used rather than `$REPORTTIME`. By default,
+`REPORTTIME_LENGTHY_COMMANDS` contains the names of several common text
+editors, pagers, and HTML viewers/Web browsers. `REPORTTIME_LENGTHY` defaults
+to `-1`.'
 			return 0
 			;;
 		(*)
@@ -1422,7 +1438,17 @@ behaviors will be enabled. This is the default.'
 }
 
 function cmd-running-time-reporting-preexec {
-	typeset -g ZSHRC_cmd_running_time_report_threshold=${REPORTTIME:-0}
+	ZSHRC_cmd_running_time_REPORTTIME_save=${REPORTTIME-}
+
+	local threshold
+
+	if {array-contains ${${2-}%% *} $REPORTTIME_LENGTHY_COMMANDS} {
+		threshold=${REPORTTIME_LENGTHY-}
+	} else {
+		threshold=${REPORTTIME-}
+	}
+
+	typeset -g ZSHRC_cmd_running_time_report_threshold=${threshold:-0}
 
 	typeset -g REPORTTIME_TYPE=${REPORTTIME_TYPE:-both}
 
@@ -1438,8 +1464,8 @@ function cmd-running-time-reporting-postexec {
 
 	typeset -g REPORTTIME_TYPE=${REPORTTIME_TYPE:-both}
 
-	if [[ $REPORTTIME_TYPE == 'run-time' ]] {
-		typeset -g REPORTTIME=$ZSHRC_cmd_running_time_report_threshold
+	if [[ -n $ZSHRC_cmd_running_time_REPORTTIME_save ]] {
+		typeset -g REPORTTIME=$ZSHRC_cmd_running_time_REPORTTIME_save
 	}
 
 	if (( ! ZSHRC_cmd_running_time_ready )) {
@@ -1449,7 +1475,9 @@ function cmd-running-time-reporting-postexec {
 
 	if [[ $REPORTTIME_TYPE == (run-time|both) ]] {
 		if (( elapsed_time >=
-				ZSHRC_cmd_running_time_report_threshold )) {
+				ZSHRC_cmd_running_time_report_threshold &&
+			ZSHRC_cmd_running_time_report_threshold >= 0
+		)) {
 			zshrc-chirp-toned printf \
 				'total command running-time: %f s\n' \
 				$elapsed_time

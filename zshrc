@@ -1755,6 +1755,54 @@ function ffinfo {
 	ffprobe -v warning $@ -v info
 }
 
+function line {
+	set -u
+
+	[[ ($# == 1 || $# == 2) && ${1-} == <-> &&
+			($# == 1 || ${2-} == <->) ]] || {
+		echo-help 'Usage: line <number> [<end-number>]
+
+Print, to the standard output stream, the <number>-th line of the standard
+input stream (with line-numbering beginning at 1, not at 0).
+
+If <end-number> is specified, print not only the <number>-th line, but also:
+  - any lines between the <number>-th line and the <end-number>-th, and
+  - the <end-number>-th line.
+
+If <end-number> is specified, it must be greater than or equal to <number>.'
+		return 2
+	}
+
+	(( $1 >= 1 )) || {
+		echo-err "error: <number> ($1) must be >= 1"
+		return 3
+	}
+
+	(( $# == 1 || ${2-0} >= $1 )) || {
+		echo-err "error: <end-number> ($2) must be >= <number> ($1)"
+		return 4
+	}
+
+	(( $# == 1 || ${2-0} >= 1 )) || {
+		echo-err "error: <end-number> ($2) must be >= 1"
+		return 5
+	}
+
+	readonly start_nr=$1 end_nr=${2-$1}
+	local line
+	integer line_nr=0
+
+	while {read line} {
+		if (( ++line_nr >= start_nr )) {
+			echo-raw $line
+		}
+
+		if (( line_nr >= end_nr )) {
+			break
+		}
+	}
+}
+
 function cutcol {
 	awk "{print \$$1}"
 }

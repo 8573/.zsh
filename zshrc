@@ -1444,6 +1444,8 @@ function cmd-running-time-reporting-preexec {
 
 	if {array-contains ${${2-}%% *} $REPORTTIME_LENGTHY_COMMANDS} {
 		threshold=${REPORTTIME_LENGTHY-}
+	} elif [[ ${${2-}%% *} == 'without-REPORTTIME' ]] {
+		threshold=-1
 	} else {
 		threshold=${REPORTTIME-}
 	}

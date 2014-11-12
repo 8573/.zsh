@@ -1427,7 +1427,11 @@ For any command listed in the array parameter `REPORTTIME_LENGTHY_COMMANDS`,
 `$REPORTTIME_LENGTHY` will be used rather than `$REPORTTIME`. By default,
 `REPORTTIME_LENGTHY_COMMANDS` contains the names of several common text
 editors, pagers, and HTML viewers/Web browsers. `REPORTTIME_LENGTHY` defaults
-to `-1`.'
+to `-1`.
+
+Because this system is overly complicated, if you want to set `REPORTTIME`
+after shell initialization, you should use the `set-REPORTTIME` shell
+function rather than setting `REPORTTIME` directly.'
 			return 0
 			;;
 		(*)
@@ -1435,6 +1439,18 @@ to `-1`.'
 			return 2
 			;;
 	}
+}
+
+function set-REPORTTIME {
+	emulate -L zsh; set -u
+
+	{ (( $# == 1 )) && [[ $1 == <-> ]] } || {
+		echo-help 'Usage: set-REPORTTIME <integer>'
+		return 2
+	}
+
+	REPORTTIME=$1
+	ZSHRC_cmd_running_time_REPORTTIME_save=$1
 }
 
 function cmd-running-time-reporting-preexec {

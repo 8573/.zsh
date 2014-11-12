@@ -1999,6 +1999,20 @@ function test-xterm256colors {
 	echo $reset_color
 }
 
+function test-busyloop {
+	emulate -L zsh; set -u
+	setopt KshGlob
+
+	{ (( $# == 1 )) && [[ $1 == <->?(.<->) ]] } || {
+		echo-help 'Usage: test-busyloop <duration in seconds>'
+		return 2
+	}
+
+	readonly end_time=$(( SECONDS + $1 ))
+
+	while (( SECONDS < end_time )) {}
+}
+
 mark-time 'functions and aliases'
 
 #}}}

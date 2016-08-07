@@ -1,0 +1,10 @@
+
+REPORTTIME=8
+
+export EDITOR=$(first-cmd-of 'vim' $EDITOR)
+export PAGER=$(first-cmd-of 'vim-pager' 'vimpager' $PAGER)
+export MANPAGER=$(first-cmd-of 'vim-manpager' 'vimpager' $MANPAGER)
+
+REPORTTIME_LENGTHY_COMMANDS+=(
+	wiktionary wikipedia mutt
+)

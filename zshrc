@@ -558,6 +558,8 @@ function get-owner-id {
 		return 2
 	}
 
+	local stat
+
 	for stat ({z,}stat) {
 		if [[ $(type -w $stat) == "$stat: builtin" ]] {
 			builtin $stat "+${type}id" $f

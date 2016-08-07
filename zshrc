@@ -797,6 +797,17 @@ wherein <command> resides is the only directory in the `PATH`.
 	command ${exe:t} ${@:2}
 }
 
+function run-secure-base {
+	emulate -L zsh; set -u
+
+	(( $# >= 1 )) || {
+		echo-help 'Usage: run-secure-base <command> [<argument>...]'
+		return 2
+	}
+
+	run-by-unambiguous-basename $(select-secure-executable -w $1 +) ${@:2}
+}
+
 mark-time 'initial functions'
 
 #}}}

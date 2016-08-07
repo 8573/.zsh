@@ -142,7 +142,7 @@ mark-time 'shell options'
 #}}}
 #{{{ Initial shell parameters
 
-ZSHRC_PATH="${(%):-%N}"
+ZSHRC_PATH="${${(%):-%N}:A}"
 
 export ZSHRC_QUIET=${ZSHRC_QUIET-}
 

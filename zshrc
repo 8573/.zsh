@@ -1667,6 +1667,10 @@ function vp {
 	}
 }
 
+function ag {
+	run-secure-base ag $@ | run-secure-base cat -v
+}
+
 function rm {
 	# Prefer GNU `rm` installed via MacPorts, if it’s available;
 	# otherwise, use the system `rm`.

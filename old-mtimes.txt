@@ -1,0 +1,10 @@
+2014-10-27 18:55:27Z  prompt-style
+2014-12-10 23:57:25Z  var
+2014-10-25 18:17:54Z  var/completion-cache
+2014-12-11 05:33:43Z  var/history
+2014-10-28 01:27:44Z  zlogout
+2014-02-17 07:55:16Z  zsh-autosuggestions
+2014-11-25 06:25:44Z  zshenv
+2014-12-05 22:36:48Z  zshrc
+2014-11-05 06:14:31Z  zshrc.local
+2014-02-17 21:00:28Z  zsh-syntax-highlighting

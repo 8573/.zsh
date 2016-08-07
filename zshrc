@@ -829,12 +829,13 @@ function assert-file-security-property {
 		z="$0: "
 	}
 
+	local type_str=''
 	case $type {
-		(E) type='ERROR';;
-		(W) type='WARNING';;
+		(E) type_msg='ERROR';;
+		(W) type_msg='WARNING';;
 	}
 
-	echo-err -n "${z}SECURITY ${type}: $fdesc"' ('"${(q-)f}"') '"$errdesc"
+	echo-err -n "${z}SECURITY ${type_msg}: $fdesc"' ('"${(q-)f}"') '"$errdesc"
 	echo-err "${z:+ Aborting.}"
 
 	return 1

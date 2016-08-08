@@ -1840,10 +1840,18 @@ function 7z-a+ {
 function chrome-open {
    if {have-Darwin-system} {
       open -a 'Google Chrome' $@
-   } else {
-      echo-err 'error: `chrome-open` is not yet implemented for non-Darwin systems.'
-      return 2
+      return
    }
+
+   readonly cmd=$(select-secure-executable -w 'Chromium or Google Chrome' \
+      chromium-browser google-chrome)
+
+   if [[ -z $cmd ]] {
+      echo-err 'error: No suitable Chromium or Google Chrome executable found.'
+      return 100
+   }
+
+   run-secure-base $cmd
 }
 
 function optipng-max {

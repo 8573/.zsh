@@ -412,11 +412,6 @@ function qualifying-files {
    filter 'file-qualifies $quals' ${@:2}
 }
 
-# TODO: Rewrite the functions below in this section to use the new
-# `file-qualifies`, where applicable. Also maybe move them to a later section,
-# given that `file-qualifies` supersedes them and renders them unnecessary as
-# Initial Functions.
-
 function cmd-exists {
    (( $# == 1 )) || {
       echo-help 'Usage: cmd-exists <name>'

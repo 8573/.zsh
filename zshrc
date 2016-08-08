@@ -1853,10 +1853,10 @@ function cutcol {
 function filesize {
    if [[ $(type -w zstat) == 'zstat: builtin' ]] {
       zstat +size $@
-   } elif [[ $(uname -a) != (#i)*GNU* ]] {
-      =stat -f '%z' $@
-   } else {
+   } elif {have-GNU-coreutil stat} {
       =stat --format='%s' $@
+   } else {
+      =stat -f '%z' $@
    }
 }
 

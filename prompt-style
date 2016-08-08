@@ -1,11 +1,3 @@
-main                 %B%F{blue}
-info                 %F{cyan}
-misc                 %F{yellow}
-clock                %B%F{blue}
-cmd-success          %B%F{blue}
-cmd-failure          %B%F{yellow}
-prompt-sigil         %B%F{green}
-prompt-sigil-special %B%F{red}
 misc-info %L
 cmd-exit-status-code-radix 16
 time-report-fmt %J:_%*E_(%P_CPU,_%U_usr,_%S_knl;_%I/%O_I/O_ops;_%W_waits)

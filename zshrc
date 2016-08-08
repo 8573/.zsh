@@ -1854,7 +1854,7 @@ function filesize {
    if [[ $(type -w zstat) == 'zstat: builtin' ]] {
       zstat -n +size $@
    } elif {have-GNU-coreutil stat} {
-      =stat --format='%s  %n' $@
+      =stat --format='%s  %n' -- $@
    } else {
       =stat -f '%z  $N' $@
    }

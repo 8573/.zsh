@@ -28,7 +28,7 @@ readonly -F ZSHRC_rc_total_runtime_report_threshold=\
 ${ZSHRC_runtime_report_threshold_override:-1}
 
 # Minimum quantity of seconds by which the (mostly) total run-time of this
-# `zshrc` script must exceed the sum of the reported run-times of its sections
+# `zshrc` script must exceed the sum of the recorded run-times of its sections
 # for that discrepancy to be reported to the user.
 readonly -F ZSHRC_rc_total_runtime_variance_report_threshold=\
 ${ZSHRC_runtime_report_threshold_override:-0.25}
@@ -2200,22 +2200,22 @@ mark-time 'zshrc.local'
 
 readonly -F ZSHRC_total_time=$(( $SECONDS - $ZSHRC_start_time ))
 
-if (( ($ZSHRC_total_time - $ZSHRC_mark_time_total_reported) \
+if (( ($ZSHRC_total_time - $ZSHRC_mark_time_total) \
       >= $ZSHRC_rc_total_runtime_variance_report_threshold )) {
-   mark-time-chirp 'time unreported in zshrc' \
-      $(( $ZSHRC_total_time - $ZSHRC_mark_time_total_reported ))
+   mark-time-chirp 'time unrecorded in zshrc' \
+      $(( $ZSHRC_total_time - $ZSHRC_mark_time_total))
 }
 
 if (( $ZSHRC_total_time >= $ZSHRC_rc_total_runtime_report_threshold )) {
    mark-time-chirp "total zshrc run-time" $ZSHRC_total_time
 }
 
-readonly -F ZSHRC_unreported_initztn_time=$(($SECONDS \
-   - $ZSHRC_mark_time_total_reported))
-if (( $ZSHRC_unreported_initztn_time \
+readonly -F ZSHRC_unrecorded_initztn_time=$(($SECONDS \
+   - $ZSHRC_mark_time_total))
+if (( $ZSHRC_unrecorded_initztn_time \
       >= $ZSHRC_initztn_total_runtime_variance_report_threshold )) {
-   mark-time-chirp 'time unreported in initialization' \
-      $ZSHRC_unreported_initztn_time
+   mark-time-chirp 'time unrecorded in initialization' \
+      $ZSHRC_unrecorded_initztn_time
 }
 
 if (( $SECONDS >= $ZSHRC_initztn_total_runtime_report_threshold )) {

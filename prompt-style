@@ -1,3 +1,4 @@
+clock-fmt %y%m%d.%H%M%S
 misc-info %L
 cmd-exit-status-code-radix 16
 time-report-fmt %J:_%*E_(%P_CPU,_%U_usr,_%S_knl;_%I/%O_I/O_ops;_%W_waits)

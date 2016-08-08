@@ -569,7 +569,7 @@ function get-owner-id {
    }
 
    local stat_arg
-   if {have-GNU-system} {
+   if {have-GNU-coreutil stat} {
       stat_arg='-c'
    } else {
       stat_arg='-f'

@@ -1701,7 +1701,16 @@ Creates a new directory and `cd`s into it.'
 function ssh {
    # `autossh`, but the completion facilities should think that it’s
    # `ssh`, and complete for it as such.
-   autossh $@
+
+   readonly cmd=$(select-secure-executable -w ssh \
+      $(which-if-any -ap autossh) $(which-if-any -ap ssh))
+
+   if [[ -z $cmd ]] {
+      echo-err 'error: No suitable `ssh` or `autossh` command found.'
+      return 100
+   }
+
+   run-secure-base $cmd $@
 }
 
 function gpg {

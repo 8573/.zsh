@@ -1528,22 +1528,6 @@ function cmd-running-time-reporting-postexec {
 #}}}
 #{{{ Functions and aliases
 
-alias fgrep='grep -F'
-alias egrep='grep -E'
-alias ln='ln -i'
-alias cp='cp -i'
-alias mv='mv -i'
-alias rm='rm -I'
-#alias git='TZ=UTC git'
-alias ffmpeg='ffmpeg -v warning'
-alias ffplay='ffplay -v warning'
-alias source-zshrc='source ~/.zshrc'
-#alias cat='echo "\`cat\` has been disabled for security reasons [<https://security.stackexchange.com/a/56309>]; try \`$PAGER\` instead."'
-alias cat='cat -v'
-alias wiktionary='without-REPORTTIME wiktionary'
-alias showterm='in-ghost-shell showterm'
-alias asciinema='in-ghost-shell asciinema'
-
 function run-coreutil {
    emulate -L zsh; set -u
 
@@ -1611,6 +1595,32 @@ function have-MacPorts-GNU-coreutil {
 function path-to-MacPorts-GNU-coreutil {
    echo-raw "/opt/local/libexec/gnubin/${1}"
 }
+
+function alias-secure-base {
+   (( $# == 2 )) || {
+      echo-help 'Usage: alias-secure-base <name> <command...>'
+      return 2
+   }
+
+   eval "
+      function ${(q-)1} {
+         run-secure-base ${@:2} \$@
+      }
+   "
+}
+
+alias-secure-base fgrep 'grep -F'
+alias-secure-base egrep 'grep -E'
+alias-secure-base ln 'ln -i'
+alias-secure-base cp 'cp -i'
+alias-secure-base mv 'mv -i'
+alias-secure-base rm 'rm -I'
+#alias-secure-base git 'TZ=UTC git'
+alias-secure-base ffmpeg 'ffmpeg -v warning'
+alias-secure-base ffplay 'ffplay -v warning'
+alias source-zshrc='source ~/.zshrc'
+#alias cat='echo "\`cat\` has been disabled for security reasons [<https://security.stackexchange.com/a/56309>]; try \`$PAGER\` instead."'
+alias-secure-base cat 'cat -v'
 
 function ls {
    local -a ls_cmd gnu_ls_opts
@@ -1767,6 +1777,18 @@ function gpg2 {
       echo-err 'error: No suitable `gpg2` command found.'
       return 100
    }
+}
+
+function wiktionary {
+   without-REPORTTIME run-secure-base wiktionary
+}
+
+function showterm {
+   in-ghost-shell run-secure-base showterm
+}
+
+function asciinema {
+   in-ghost-shell run-secure-base asciinema
 }
 
 function vim-ghost {

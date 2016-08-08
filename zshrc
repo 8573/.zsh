@@ -463,6 +463,7 @@ function array-index-of {
 
    integer i=0
 
+   local element
    for element (${@:2}) {
       (( ++i ))
 

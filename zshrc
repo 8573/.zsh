@@ -703,6 +703,8 @@ found by `which -ap -- <name>`.'
       fail_type='-w'
    }
 
+   local exe
+
    for exe (${@:3}) {
       if [[ $exe == '+' ]] {
          if {executable-exists $name} {

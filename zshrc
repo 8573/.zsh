@@ -1862,9 +1862,9 @@ function filesize {
 
 function filecreationtime {
    if {have-GNU-coreutil stat} {
-      =stat --format='%w' -- $@
+      =stat --format='%w  %n' -- $@
    } else {
-      =stat -t '%F %T %z' -f '%SB' $@
+      =stat -t '%F %T %z' -f '%SB  %N' $@
    }
 }
 

@@ -1494,6 +1494,8 @@ function cmd-running-time-reporting-preexec {
       typeset -g REPORTTIME=-1
    }
 
+   ZSHRC_cmd_running_time_ready=1
+
    typeset -g ZSHRC_last_cmd_preexec_time=${SECONDS:-0}
 }
 
@@ -1507,7 +1509,6 @@ function cmd-running-time-reporting-postexec {
    }
 
    if (( ! ZSHRC_cmd_running_time_ready )) {
-      ZSHRC_cmd_running_time_ready=1
       return
    }
 
@@ -1523,6 +1524,8 @@ function cmd-running-time-reporting-postexec {
    } elif [[ $REPORTTIME_TYPE != 'cpu-time' ]] {
       echo-err 'error: `$REPORTTIME_TYPE` should be `run-time`, `cpu-time`, or `both`. (Try running `cmd-running-time-reporting help` for help.)'
    }
+
+   ZSHRC_cmd_running_time_ready=0
 }
 
 #}}}

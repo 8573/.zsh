@@ -1621,6 +1621,7 @@ alias-secure-base ffplay 'ffplay -v warning'
 alias source-zshrc='source ~/.zshrc'
 #alias cat='echo "\`cat\` has been disabled for security reasons [<https://security.stackexchange.com/a/56309>]; try \`$PAGER\` instead."'
 alias-secure-base cat 'cat -v'
+alias-secure-base gpg2 'gpg2'
 
 function ls {
    local -a ls_cmd gnu_ls_opts
@@ -1721,17 +1722,6 @@ function gpg {
       $c $@
    } else {
       echo-err 'error: No suitable `gpg2` or `gpg` command found.'
-      return 100
-   }
-}
-
-function gpg2 {
-   readonly c=$(select-secure-executable -w gpg2 +)
-
-   if [[ -n $c ]] {
-      $c $@
-   } else {
-      echo-err 'error: No suitable `gpg2` command found.'
       return 100
    }
 }

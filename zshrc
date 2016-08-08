@@ -2129,6 +2129,7 @@ autoload -Uz compinit
    }
    if { is-zsh-fn compinit } {
       compinit -d ~/.zsh/var/completion-cache $d
+      _comp_options+='NO_POSIX_IDENTIFIERS'
    }
 }
 

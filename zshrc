@@ -258,8 +258,8 @@ function assert {
 If <predicate>, evaluated as the body of an anonymous function prefixed with
 `emulate -L zsh; setopt ERR_EXIT NO_UNSET PIPE_FAIL;`, returns false (i.e.
 exits with a non-zero exit status code), `assert` outputs an error message to
-the standard error stream and returns the same exit status code as
-<predicate>.
+the standard error stream and exits the script with the same exit status code
+as <predicate>.
 
 <predicate>’s standard input, output, and error streams are bound to the null
 device (`/dev/null`).'

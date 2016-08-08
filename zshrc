@@ -1160,6 +1160,7 @@ if [[ -e $ZSHRC_PROMPT_STYLE_FILE ]] {
 }
 
 () {
+   local k v
    for k v (
       main '%B%F{blue}'
       info '%B%F{blue}'

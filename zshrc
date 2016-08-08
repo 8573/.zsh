@@ -1839,7 +1839,7 @@ function 7z-a+ {
 
 function chrome-open {
    if {have-Darwin-system} {
-      open -a 'Google Chrome' $@ --args --ssl-version-min=tls1
+      open -a 'Google Chrome' $@
    } else {
       echo-err 'error: `chrome-open` is not yet implemented for non-Darwin systems.'
       return 2

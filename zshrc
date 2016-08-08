@@ -575,12 +575,7 @@ function get-owner-id {
       stat_arg='-f'
    }
 
-   for stat ({/usr,}/bin/stat) {
-      if [[ $(type -w $stat) == "$stat: command" ]] {
-         $stat $stat_arg "%${type}" $f
-         return $?
-      }
-   }
+   run-secure-base stat $stat_arg "%${type}" $f
 }
 
 function get-owner-uid {
@@ -1856,17 +1851,17 @@ function filesize {
    if [[ $(type -w zstat) == 'zstat: builtin' ]] {
       zstat -n +size $@
    } elif {have-GNU-coreutil stat} {
-      =stat --format='%s  %n' -- $@
+      run-coreutil stat --format='%s  %n' -- $@
    } else {
-      =stat -f '%z  $N' $@
+      run-secure-base stat -f '%z  $N' $@
    }
 }
 
 function filecreationtime {
    if {have-GNU-coreutil stat} {
-      =stat --format='%w  %n' -- $@
+      run-coreutil stat --format='%w  %n' -- $@
    } else {
-      =stat -t '%F %T %z' -f '%SB  %N' $@
+      run-secure-base stat -t '%F %T %z' -f '%SB  %N' $@
    }
 }
 

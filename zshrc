@@ -2141,29 +2141,6 @@ mark-time 'completion'
 #}}}
 #{{{ Extensions
 
-#{{{ Auto-suggestions
-# Eats ~90% CPU and is slightly buggy.
-if ((0)) {
-   source ~/.zsh/zsh-autosuggestions/autosuggestions.zsh
-
-   # Enable auto-suggestions automatically
-   function zle-line-init {
-      zle autosuggest-start
-   }
-   zle -N zle-line-init
-
-   bindkey '^[S' autosuggest-toggle
-}
-#}}}
-
-#{{{ Syntax highlighting
-# Must be at the end of this file, allegedly.
-# Slightly buggy.
-if ((0)) {
-   source ~/.zsh/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
-}
-#}}}
-
 mark-time 'extensions'
 
 #}}}

@@ -1715,15 +1715,15 @@ function ssh {
 }
 
 function gpg {
-   readonly c=$(select-secure-executable \
-      -w gpg $(which-if-any -ap gpg2) +)
+   readonly cmd=$(select-secure-executable -w gpg \
+      $(which-if-any -ap gpg2) +)
 
-   if [[ -n $c ]] {
-      $c $@
-   } else {
+   if [[ -z $cmd ]] {
       echo-err 'error: No suitable `gpg2` or `gpg` command found.'
       return 100
    }
+
+   run-secure-base $cmd $@
 }
 
 function wiktionary {

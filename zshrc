@@ -380,10 +380,10 @@ function file-qualifies {
       return 2
    }
 
-   readonly quals=$1 file=$2
+   readonly quals=$1 file=${2:A}
 
    [[ -e $file ]] || {
-      echo-err 'error: File '"${(q-)file}"' not found.'
+      echo-err 'error: File '"${(q-)2}"' not found.'
       return 3
    }
 

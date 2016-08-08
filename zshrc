@@ -1640,7 +1640,7 @@ function ls {
       ls_cmd+=$color_opt
    }
 
-   $ls_cmd $@
+   run-secure-base $ls_cmd $@
 }
 
 function la {

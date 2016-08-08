@@ -1688,58 +1688,6 @@ function ag {
    run-secure-base ag $@ | run-secure-base cat -v
 }
 
-function rm {
-   # Prefer GNU `rm` installed via MacPorts, if it’s available;
-   # otherwise, use the system `rm`.
-
-   readonly macports_grm='/opt/local/bin/grm'
-
-   for rm ($macports_grm =rm) {
-      if [[ -e $rm ]] {
-         [[ -x $rm ]] || {
-            echo-err 'error: '"${(q-)rm}"' exists but is not executable.
-
-Until this permissions error is fixed, try running one of these `rm` commands
-instead:'
-            filter '() {
-               [[ -x $1 ]] && file-is-secure $1
-            }' $(which -a rm)
-
-            return 100
-         }
-
-         assert-file-is-secure $rm 'The `rm` executable' ||
-            return 101
-
-         local -a path
-
-         # Set PATH locally so that only one `rm` executable
-         # will be in PATH, then run `rm`.
-         #
-         # We could instead run the `rm` executable by
-         # providing its full path, but then, at least with GNU
-         # `rm`, its messages would be prefixed with that full
-         # path rather than with merely `rm`, cluttering its
-         # output.
-
-         if [[ $rm == $macports_grm &&
-               -x '/opt/local/libexec/gnubin/rm' ]] {
-            path=('/opt/local/libexec/gnubin')
-         } else {
-            path=(${rm:h})
-         }
-
-         { assert-file-is-secure "$path" \
-            'The directory containing the `rm` executable'
-         } || return 102
-
-         command rm $@
-
-         return $?
-      }
-   }
-}
-
 function newdir {
    (( $# == 1 )) || {
       echo 'usage: newdir <name of new directory>

@@ -1,0 +1,5 @@
+zsh-config
+========
+
+A configuration for the Z shell (zsh), quite possibly complicated and
+convoluted well beyond reason.

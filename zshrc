@@ -803,6 +803,87 @@ function run-secure-base {
    run-by-unambiguous-basename $(select-secure-executable -w $1 +) ${@:2}
 }
 
+function run-coreutil {
+   emulate -L zsh; set -u
+
+   (( $# >= 1 )) || {
+      echo-help 'Usage: run-coreutil <name> [<argument>...]'
+      return 2
+   }
+
+   readonly cmdname=$1
+   local cmd=''
+   local -a args
+
+   args=(${@:2})
+
+   # Here at least, prefer GNU coreutils. If GNU coreutils are not
+   # available, use whatever is available.
+   if {have-GNU-system} {
+      cmd=$cmdname
+   } elif {have-MacPorts-GNU-coreutil $cmdname} {
+      cmd=$(path-to-MacPorts-GNU-coreutil $cmdname)
+   } else {
+      cmd=$cmdname
+   }
+
+   executable-exists $cmd || {
+      echo-err "error: command not found: $cmdname"
+      return 100
+   }
+
+   cmd=$(select-secure-executable -w $cmdname =$cmd +)
+
+   if [[ -n $cmd ]] {
+      run-by-unambiguous-basename $cmd $args
+   } else {
+      return 101
+   }
+}
+
+function have-GNU-coreutil {
+   (( $# == 1 )) || {
+      echo-help 'Usage: have-GNU-coreutil <name>'
+      return 2
+   }
+
+   { have-GNU-system && cmd-exists $1 } ||
+      have-MacPorts-GNU-coreutil $1
+}
+
+function have-MacPorts-GNU-bin {
+   have-MacPorts &&
+      [[ -d '/opt/local/libexec/gnubin' ]]
+}
+
+function have-MacPorts-GNU-coreutil {
+   (( $# == 1 )) || {
+      echo-help 'Usage: have-MacPorts-GNU-coreutil <name>'
+      return 2
+   }
+
+   have-MacPorts-GNU-bin &&
+      [[ -x "/opt/local/bin/g${1}" ]] &&
+      [[ -x "/opt/local/libexec/gnubin/${1}" ]]
+}
+
+function path-to-MacPorts-GNU-coreutil {
+   echo-raw "/opt/local/libexec/gnubin/${1}"
+}
+
+function alias-secure-base {
+   (( $# == 2 )) || {
+      echo-help 'Usage: alias-secure-base <name> <command...>'
+      return 2
+   }
+
+   eval "
+      function ${(q-)1} {
+         run-secure-base ${@:2} \$@
+      }
+   "
+}
+
 mark-time 'initial functions'
 
 #}}}
@@ -1522,87 +1603,6 @@ function cmd-running-time-reporting-postexec {
 
 #}}}
 #{{{ Functions and aliases
-
-function run-coreutil {
-   emulate -L zsh; set -u
-
-   (( $# >= 1 )) || {
-      echo-help 'Usage: run-coreutil <name> [<argument>...]'
-      return 2
-   }
-
-   readonly cmdname=$1
-   local cmd=''
-   local -a args
-
-   args=(${@:2})
-
-   # Here at least, prefer GNU coreutils. If GNU coreutils are not
-   # available, use whatever is available.
-   if {have-GNU-system} {
-      cmd=$cmdname
-   } elif {have-MacPorts-GNU-coreutil $cmdname} {
-      cmd=$(path-to-MacPorts-GNU-coreutil $cmdname)
-   } else {
-      cmd=$cmdname
-   }
-
-   executable-exists $cmd || {
-      echo-err "error: command not found: $cmdname"
-      return 100
-   }
-
-   cmd=$(select-secure-executable -w $cmdname =$cmd +)
-
-   if [[ -n $cmd ]] {
-      run-by-unambiguous-basename $cmd $args
-   } else {
-      return 101
-   }
-}
-
-function have-GNU-coreutil {
-   (( $# == 1 )) || {
-      echo-help 'Usage: have-GNU-coreutil <name>'
-      return 2
-   }
-
-   { have-GNU-system && cmd-exists $1 } ||
-      have-MacPorts-GNU-coreutil $1
-}
-
-function have-MacPorts-GNU-bin {
-   have-MacPorts &&
-      [[ -d '/opt/local/libexec/gnubin' ]]
-}
-
-function have-MacPorts-GNU-coreutil {
-   (( $# == 1 )) || {
-      echo-help 'Usage: have-MacPorts-GNU-coreutil <name>'
-      return 2
-   }
-
-   have-MacPorts-GNU-bin &&
-      [[ -x "/opt/local/bin/g${1}" ]] &&
-      [[ -x "/opt/local/libexec/gnubin/${1}" ]]
-}
-
-function path-to-MacPorts-GNU-coreutil {
-   echo-raw "/opt/local/libexec/gnubin/${1}"
-}
-
-function alias-secure-base {
-   (( $# == 2 )) || {
-      echo-help 'Usage: alias-secure-base <name> <command...>'
-      return 2
-   }
-
-   eval "
-      function ${(q-)1} {
-         run-secure-base ${@:2} \$@
-      }
-   "
-}
 
 alias-secure-base fgrep 'grep -F'
 alias-secure-base egrep 'grep -E'

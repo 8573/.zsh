@@ -8,3 +8,5 @@ export MANPAGER=$(first-cmd-of 'vim-manpager' 'vimpager' $MANPAGER)
 REPORTTIME_LENGTHY_COMMANDS+=(
 	wiktionary wikipedia mutt
 )
+
+alias ':q'='exit'

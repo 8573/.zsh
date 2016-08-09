@@ -597,7 +597,7 @@ function file-is-owned-by-me-or-root {
       return 2
    }
 
-   [[ -O $1 ]] || [[ $(get-owner-uid $1) == 0 ]]
+   [[ -O $1 ]] || file-qualifies 'u0' $1
 }
 
 function file-is-not-writable-to-others {

@@ -994,13 +994,16 @@ assert-file-is-secure ~/.zsh      'Your zsh settings directory'    || return 1
 assert-file-is-secure ~/.zsh/var  'Your zsh data directory'        || return 1
 
 module_path=(${^module_path}(N))
-for d ($module_path) {
-   assert-file-is-secure $d  'A zsh `$module_path` directory' || return 1
-}
-
 fpath=(${^fpath}(N))
-for d ($fpath) {
-   assert-file-is-secure $d  'A zsh `$fpath` directory'       || return 1
+
+() {
+   local d
+   for d ($module_path) {
+      assert-file-is-secure $d  'A zsh `$module_path` directory' || return 1
+   }
+   for d ($fpath) {
+      assert-file-is-secure $d  'A zsh `$fpath` directory'       || return 1
+   }
 }
 
 setopt FunctionArgZero

@@ -1092,13 +1092,25 @@ CXX_POSSIBILITIES=(
 
 #}}}
 
-export EDITOR=$(first-cmd-of $EDITOR_POSSIBILITIES)
+export EDITOR=$(
+   select-secure-cmd -w 'text editor ($EDITOR)' \
+      $EDITOR_POSSIBILITIES)
 export SLANG_EDITOR='vim %s +%d'
-export PAGER=$(first-cmd-of $PAGER_POSSIBILITIES)
-export MANPAGER=$(first-cmd-of $MANPAGER_POSSIBILITIES)
-export BROWSER=$(first-cmd-of $BROWSER_POSSIBILITIES)
-export CC=$(first-cmd-of $CC_POSSIBILITIES)
-export CXX=$(first-cmd-of $CXX_POSSIBILITIES)
+export PAGER=$(
+   select-secure-cmd -w 'pager ($PAGER)' \
+      $PAGER_POSSIBILITIES)
+export MANPAGER=$(
+   select-secure-cmd -w 'manual pager ($MANPAGER)' \
+      $MANPAGER_POSSIBILITIES)
+export BROWSER=$(
+   select-secure-cmd -w 'Web browser ($BROWSER)' \
+      $BROWSER_POSSIBILITIES)
+export CC=$(
+   select-secure-cmd -w 'C compiler ($CC)' \
+      $CC_POSSIBILITIES)
+export CXX=$(
+   select-secure-cmd -w 'C++ compiler ($CXX)' \
+      $CXX_POSSIBILITIES)
 export MACOSX_DEPLOYMENT_TARGET=10.6
 export LS_COLOR=yes
 export CCACHE_COMPRESS=yes

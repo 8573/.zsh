@@ -1059,23 +1059,23 @@ local -a \
    CXX_POSSIBILITIES \
 
 EDITOR_POSSIBILITIES=(
-   'nano' 'vim' 'nvi' 'elvis' 'vi' 'pico' 'emacs' 'joe' 'jed' 'ed'
-   ${EDITOR-})
+   ${EDITOR-} 'nano' 'vim' 'nvi' 'elvis' 'vi' 'pico' 'emacs' 'joe' 'jed' 'ed'
+)
 PAGER_POSSIBILITIES=(
-   'most' 'less' 'more' 'cat'
-   ${PAGER-})
+   ${PAGER-} 'most' 'less' 'more' 'cat'
+)
 MANPAGER_POSSIBILITIES=(
-   'most' 'less' 'more' 'cat'
-   ${MANPAGER-})
+   ${MANPAGER-} 'most' 'less' 'more' 'cat'
+)
 BROWSER_POSSIBILITIES=(
-   'elinks' 'w3m' 'lynx' 'links'
-   ${BROWSER-})
+   ${BROWSER-} 'elinks' 'w3m' 'lynx' 'links'
+)
 CC_POSSIBILITIES=(
-   'clang' 'gcc' 'cc'
-   ${CC-})
+   ${CC-} 'clang' 'gcc' 'cc'
+)
 CXX_POSSIBILITIES=(
-   'clang++' 'g++' 'c++'
-   ${CXX-})
+   ${CXX-} 'clang++' 'g++' 'c++'
+)
 
 #}}}
 

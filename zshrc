@@ -2010,8 +2010,10 @@ Open `$PAGER` with the first occurrence of <name> in `$fpath`.'
       return 2
    }
 
+   local f
+
    for dir ($fpath) {
-      readonly f="$dir/$1"
+      f="$dir/$1"
 
       if [[ -e $f ]] {
          if [[ -r $f ]] {

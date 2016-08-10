@@ -1655,6 +1655,8 @@ alias source-zshrc='source ~/.zshrc'
 #alias cat='echo "\`cat\` has been disabled for security reasons [<https://security.stackexchange.com/a/56309>]; try \`$PAGER\` instead."'
 alias-secure-base cat 'cat -v'
 alias-secure-base gpg2 'gpg2'
+alias-secure-base bt-on 'bluetoothctl <<<"power on"'
+alias-secure-base bt-off 'bluetoothctl <<<"power off"'
 
 function ls {
    local -a ls_cmd gnu_ls_opts

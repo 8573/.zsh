@@ -1661,7 +1661,7 @@ function ls {
    local color_opt
 
    gnu_ls_opts=(
-      --classify --escape --human-readable --time-style='+%F %T'
+      --classify --escape --si --time-style='+%F %T'
       -v
    )
 

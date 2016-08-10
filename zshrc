@@ -1047,9 +1047,22 @@ mark-time 'module loading'
 
 autoload -Uz colors && colors
 
-HISTSIZE=1000
-SAVEHIST=1000
+#{{{ Shell history
+
+readonly ZSHRC_history_max_entries=1000
+
+() {
+   local var
+   for var (HISTSIZE SAVEHIST) {
+      if (( ${(P)var} < ZSHRC_history_max_entries )) {
+         : ${(P)var::=${ZSHRC_history_max_entries}}
+      }
+   }
+}
+
 HISTFILE=~/.zsh/var/history
+
+#}}}
 
 # Report timing information (like `time`) for all commands that run for at
 # least 16 seconds (of CPU time?).

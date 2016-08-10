@@ -700,7 +700,7 @@ found by `which -ap -- <name>`.'
          if {executable-exists $name} {
             exes+=(${(f)"$(which-if-any -ap -- $name)"})
          }
-      } else {
+      } elif [[ -x $exe && ! -d $exe ]] {
          exes+=$exe
       }
    }

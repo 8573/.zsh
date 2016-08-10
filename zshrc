@@ -761,6 +761,20 @@ found by `which -ap -- <name>`.'
    }
 }
 
+function select-secure-cmd {
+   emulate -L zsh; set -u
+
+   { (( $# >= 3 )) && [[ $1 == -[-weq] ]] } || {
+      echo-help 'Usage: select-secure-cmd (-w | -e | -q | --) <name> <command>...
+
+Equivalent to `select-secure-executable`, except that the <command>s are
+resolved to executables, as by `which -ap`.'
+      return 2
+   }
+
+   select-secure-executable $1 $2 $(which -ap -- ${@:3})
+}
+
 function run-by-unambiguous-basename {
    emulate -L zsh; set -u
 

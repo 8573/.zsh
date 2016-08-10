@@ -2010,7 +2010,7 @@ Open `$PAGER` with the first occurrence of <name> in `$fpath`.'
       return 2
    }
 
-   local f
+   local dir f
 
    for dir ($fpath) {
       f="$dir/$1"

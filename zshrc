@@ -2108,37 +2108,6 @@ bindkey -M c74d-vicmd '#' vi-pound-insert
 
 bindkey -A c74d-emacs main
 
-# Customize the handling of Control-C. With the default handling, if Control-C
-# is pressed at a completion selection menu, the menu is closed, and -- due to
-# what would appear to be a bug reported in 2015 [1] but not yet fixed -- the
-# left-hand shell prompt may disappear.
-#
-# I would prefer that Control-C at a completion selection menu close the menu
-# without wiping away the prompt.
-#
-# [1]: <http://www.zsh.org/mla/workers/2015/msg03349.html>
-function TRAPINT {
-   emulate -L zsh; set -u
-
-   # If line editing is active...
-   if {zle} {
-      # Clear the screen of any completion menu that may be present. Without
-      # this, exiting a completion menu (such that the user is returned to
-      # usual line-editing) doesn't seem to de-render it (such that it remains
-      # at least partially visible).
-      zle -Rc
-
-      # This seems to be a milder or safer version of the usual effect of
-      # Control-C; it still exits menus and cancels line editing, but isn't
-      # handled in a way that's (as I barely understand it) separate from line
-      # editing and often causes the prompt to get wiped.
-      zle .send-break
-   }
-
-   # Pass the interrupt signal on to zsh to be otherwise handled normally.
-   return $(( 128 + $1 ))
-}
-
 mark-time 'key bindings'
 
 #}}}

@@ -1,12 +1,14 @@
 
 REPORTTIME=8
 
-export EDITOR=$(select-secure-cmd -w EDITOR \
-   'vim' $EDITOR)
-export PAGER=$(select-secure-cmd -w PAGER \
-   'vim-pager' 'vimpager' $PAGER)
-export MANPAGER=$(select-secure-cmd -w MANPAGER \
-   'vim-manpager' 'vimpager' $MANPAGER)
+if [[ ! -e /etc/NIXOS ]] {
+   export EDITOR=$(select-secure-cmd -w EDITOR \
+      'vim' $EDITOR)
+   export PAGER=$(select-secure-cmd -w PAGER \
+      'vim-pager' 'vimpager' $PAGER)
+   export MANPAGER=$(select-secure-cmd -w MANPAGER \
+      'vim-manpager' 'vimpager' $MANPAGER)
+}
 
 REPORTTIME_LENGTHY_COMMANDS+=(
    wiktionary wikipedia mutt

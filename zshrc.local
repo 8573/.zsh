@@ -1,9 +1,12 @@
 
 REPORTTIME=8
 
-export EDITOR=$(first-cmd-of 'vim' $EDITOR)
-export PAGER=$(first-cmd-of 'vim-pager' 'vimpager' $PAGER)
-export MANPAGER=$(first-cmd-of 'vim-manpager' 'vimpager' $MANPAGER)
+export EDITOR=$(select-secure-cmd -w EDITOR \
+	'vim' $EDITOR)
+export PAGER=$(select-secure-cmd -w PAGER \
+	'vim-pager' 'vimpager' $PAGER)
+export MANPAGER=$(select-secure-cmd -w MANPAGER \
+	'vim-manpager' 'vimpager' $MANPAGER)
 
 REPORTTIME_LENGTHY_COMMANDS+=(
 	wiktionary wikipedia mutt

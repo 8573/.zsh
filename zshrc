@@ -1284,8 +1284,10 @@ if [[ -e $ZSHRC_PROMPT_STYLE_FILE ]] {
       prompt-sigil '%B%F{green}'
       prompt-sigil-special '${ZSHRC_PROMPT_STYLE[prompt-sigil]-}'
       select-prompt '${ZSHRC_PROMPT_STYLE[prompt-sigil]-}'
+      notice '%B%F{yellow}'
+      alert '%B%F{red}'
       cmd-success '%B%F{blue}'
-      cmd-failure '%B%F{red}'
+      cmd-failure '${ZSHRC_PROMPT_STYLE[alert]-}'
       #cmd-exit-status-code-radix 10
       spell-old '${ZSHRC_PROMPT_STYLE[info]-}'
       spell-new '${ZSHRC_PROMPT_STYLE[info]-}'
@@ -1380,8 +1382,12 @@ function set-dynamic-prompts {
 
    readonly misc_info=${pstyle[misc-info]-}
 
+   zstyle ':vcs_info:*' actionformats "%b ${pstyle[notice]}%a "
+   vcs_info
+   readonly vcs_info="${pstyle[misc]}${vcs_info_msg_0_}%b%f"
+
    # Main prompt, right-hand side.
-   typeset -g RPS1="${cwd_info}${prev_cmd_status}%b%f ${pstyle[clock]-}${prompt_clock}%b%f${misc_info:+ }${pstyle[misc]}${misc_info}%b%f"
+   typeset -g RPS1="${cwd_info}${vcs_info}${prev_cmd_status}%b%f ${pstyle[clock]-}${prompt_clock}%b%f${misc_info:+ }${pstyle[misc]}${misc_info}%b%f"
 
    if [[ -n $ZSHRC_NO_RPROMPT ]] {
       RPS1=''
@@ -1510,6 +1516,13 @@ function zsh-prompt-refresh {
 }
 
 run-at-shell-entry 'zsh-prompt-refresh sched-only'
+#}}}
+#{{{ vcs_info
+
+zstyle ':vcs_info:*' formats '%b '
+
+autoload -Uz vcs_info
+
 #}}}
 
 mark-time 'shell prompts'

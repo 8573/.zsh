@@ -1294,6 +1294,7 @@ if [[ -e $ZSHRC_PROMPT_STYLE_FILE ]] {
       debug-trace '%F{red}'
       #misc-info '%L'
       #unicode yes
+      rprompt-abbrev-threshold-term-width-divisor 0
    ) {
       if (( ! ${+ZSHRC_PROMPT_STYLE[$k]} )) {
          eval 'ZSHRC_PROMPT_STYLE[$k]="'"$v"'"'
@@ -1386,8 +1387,31 @@ function set-dynamic-prompts {
    vcs_info
    readonly vcs_info="${pstyle[misc]}${vcs_info_msg_0_}%b%f"
 
+   readonly rhs_prompt_sans_paths="${prev_cmd_status}%b%f ${pstyle[clock]-}${prompt_clock}%b%f${misc_info:+ }${pstyle[misc]}${misc_info}%b%f"
+
+   local rhs_prompt="${cwd_info}${vcs_info}${rhs_prompt_sans_paths}"
+
+   # If the right-hand prompt occupies more than (1/rattwd) of the terminal
+   # width, abbreviate the paths in it with increasing severity until either
+   # it doesn't, or there's nothing left to abbreviate.
+   readonly rattwd=${pstyle[rprompt-abbrev-threshold-term-width-divisor]}
+   integer path_segm_max_len=8
+   local cwd_abbr cwd_abbr_fmtd vcs_abbr vcs_abbr_fmtd
+   while ((
+      rattwd
+      && path_segm_max_len
+      && ${#${${(%)rhs_prompt}//$'\e['[0-9;]##m}} > (COLUMNS / rattwd)
+   )) {
+      cwd_abbr=$(abbreviate-path $path_segm_max_len / "${(%):-%~}")
+      cwd_abbr_fmtd="${pstyle[info]}${cwd_abbr//\%/%%}%b%f"
+      vcs_abbr=$(abbreviate-path $path_segm_max_len / "$vcs_info_msg_0_")
+      vcs_abbr_fmtd="${pstyle[misc]}${vcs_abbr//\%/%%}%b%f"
+      path_segm_max_len+=-1
+      rhs_prompt="${cwd_abbr_fmtd} ${vcs_abbr_fmtd}${rhs_prompt_sans_paths}"
+   }
+
    # Main prompt, right-hand side.
-   typeset -g RPS1="${cwd_info}${vcs_info}${prev_cmd_status}%b%f ${pstyle[clock]-}${prompt_clock}%b%f${misc_info:+ }${pstyle[misc]}${misc_info}%b%f"
+   typeset -g RPS1=$rhs_prompt
 
    if [[ -n $ZSHRC_NO_RPROMPT ]] {
       RPS1=''

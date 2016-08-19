@@ -1999,6 +1999,22 @@ function save-cmd-exit-status-code {
    ZSHRC_LAST_CMD_EXIT_STATUS_CODE=$?
 }
 
+function abbreviate-path {
+   (( $# == 3 )) || {
+      echo-help 'Usage: abbreviate-path <abbr-segment-width> <sep-char> <path>'
+      return 2
+   }
+
+   setopt EXTENDED_GLOB
+
+   readonly abbr_width=$1 sep=$2 p=$3
+
+   readonly segment_start=${"$(printf '%*s' $abbr_width)"// /[^${sep}]}
+
+   local -a match mbegin mend
+   echo-raw ${p//(#b)(${~segment_start})[^${sep}]##${sep}/${match[1]}${sep}}
+}
+
 function have-zsh-supporting-Unicode-TIMEFMT {
    emulate -L zsh; set -u
 

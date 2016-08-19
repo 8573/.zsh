@@ -2042,6 +2042,40 @@ Open `$PAGER` with the first occurrence of <name> in `$fpath`.'
    }
 }
 
+function edit-zsh-fn {
+   emulate -L zsh; set -u
+
+   (( $# == 1 )) || {
+      echo-help 'Usage: edit-zsh-fn <name>
+Edit the zsh function <name> in `$EDITOR`.'
+      return 2
+   }
+
+   is-zsh-fn $1 || {
+      echo-err "${(q-)1} does not appear to be an existing zsh function."
+      return 3
+   }
+
+   readonly f=$(mktemp -t "XXXXXXXXXX.$1.zsh")
+
+   which $1 | sed 's/ *$//' >| $f
+
+   readonly pre_edit_time=$SECONDS
+   ${=EDITOR} $f
+   readonly post_edit_time=$SECONDS
+
+   unfunction $1
+   source $f
+   rm $f
+
+   if (( post_edit_time - pre_edit_time < 0.5 )) {
+      echo-err 'edit-zsh-fn: warning: Your editor seems to have exited after less than half a
+   second, which may indicate that it forked (as, e.g., Vim in GUI mode
+   without the `--nofork` (`-f`) option does), which would result in your
+   changes to the function not having been saved.'
+   }
+}
+
 function test-italics {
    # <https://code.google.com/p/iterm2/issues/detail?id=391#c12>
    echo "$(tput sitm)italics$(tput ritm) $(tput smso)standout$(tput rmso)"

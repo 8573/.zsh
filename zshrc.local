@@ -14,6 +14,8 @@ REPORTTIME_LENGTHY_COMMANDS+=(
    wiktionary wikipedia mutt
 )
 
+export MANWIDTH=$((COLUMNS * 0.75))
+
 alias ':q'='exit'
 
 # Vim: et sw=3

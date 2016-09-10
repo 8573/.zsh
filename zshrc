@@ -1215,15 +1215,6 @@ export LSCOLORS="${${$(echo "
 
 #}}}
 
-# `git-hub` shell environment setup
-if [[ -e ~/src/git-hub ]] {
-   assert-file-is-secure ~/src/git-hub \
-         'The `git-hub` source directory' &&
-      assert-file-is-secure ~/src/git-hub/init \
-         'The `git-hub` shell environment set-up script' &&
-      source ~/src/git-hub/init
-}
-
 # De-duplicate any duplicate elements that may have been introduced into the
 # lookup path arrays (which somehow does happen, despite them being declared
 # `-aU` in my `~/.zshenv`.

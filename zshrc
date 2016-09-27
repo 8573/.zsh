@@ -1909,7 +1909,7 @@ function chrome-open {
       return
    }
 
-   readonly cmd=$(select-secure-executable -w 'Chromium or Google Chrome' \
+   readonly cmd=$(select-secure-cmd -w 'Chromium or Google Chrome' \
       chromium-browser google-chrome)
 
    if [[ -z $cmd ]] {

@@ -2113,6 +2113,7 @@ function test-italics {
 }
 
 function test-xterm256colors {
+   local c
    for c ({0..255}) {
       printf "\e[38;5;${c}m\e[48;5;${c}m%5d  █%s" $c $reset_color
       (( ($c % 10) == 9 )) && echo

@@ -1694,7 +1694,7 @@ function ls {
    local color_opt
 
    gnu_ls_opts=(
-      --classify --escape --si --time-style='+%F %T'
+      --classify --quoting-style=shell-escape --si --time-style='+%F %T'
       -v
    )
 

@@ -1267,17 +1267,17 @@ if [[ -e $ZSHRC_PROMPT_STYLE_FILE ]] {
 () {
    local k v
    for k v (
-      main '%B%F{blue}'
-      info '%B%F{blue}'
-      misc '%F{cyan}'
-      clock '%B%F{blue}'
+      main '%B%F{cyan}'
+      info '%F{cyan}'
+      misc '%F{green}'
+      clock '${ZSHRC_PROMPT_STYLE[info]-}'
       clock-fmt '%F %T'
       prompt-sigil '%B%F{green}'
       prompt-sigil-special '${ZSHRC_PROMPT_STYLE[prompt-sigil]-}'
       select-prompt '${ZSHRC_PROMPT_STYLE[prompt-sigil]-}'
       notice '%B%F{yellow}'
       alert '%B%F{red}'
-      cmd-success '%B%F{blue}'
+      cmd-success '${ZSHRC_PROMPT_STYLE[info]-}'
       cmd-failure '${ZSHRC_PROMPT_STYLE[alert]-}'
       #cmd-exit-status-code-radix 10
       spell-old '${ZSHRC_PROMPT_STYLE[info]-}'

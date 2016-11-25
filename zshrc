@@ -782,7 +782,7 @@ function run-by-unambiguous-basename {
       echo-help 'Usage: run-by-unambiguous-basename <command> [<argument>...]
 
 Runs <command> by basename alone, in an environment where the directory
-wherein <command> resides is the only directory in the `PATH`.
+wherein <command> resides is the first directory in the `PATH`.
 
 <command> may be either:
   - a path to an executable, or
@@ -799,9 +799,13 @@ wherein <command> resides is the only directory in the `PATH`.
 
    readonly exe==$cmd
 
+   local -aU new_path
+
+   new_path=(${exe:h} $path)
+
    local -a path
 
-   path=(${exe:h})
+   path=($new_path)
 
    command ${exe:t} ${@:2}
 }

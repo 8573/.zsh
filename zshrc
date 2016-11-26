@@ -2036,6 +2036,11 @@ function maybe-exit-after-first-cmd {
          builtin exit
       }
 
+      if (( ZSHRC_EXIT_AFTER_FIRST_CMD_IF_OK
+            && !ZSHRC_LAST_CMD_EXIT_STATUS_CODE )) {
+         builtin exit
+      }
+
       precmd_functions=(${precmd_functions:#maybe-exit-after-first-cmd})
    }
 }

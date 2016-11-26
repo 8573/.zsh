@@ -1752,6 +1752,14 @@ function llwhich {
    ll $(which-if-any $@)
 }
 
+function e {
+   local -a choices
+   choices=("${VISUAL%-nofork}" "$VISUAL" "${EDITOR%-nofork}" "$EDITOR")
+   readonly cmd="$(select-secure-cmd -w editor $choices)"
+
+   run-secure-base "$cmd" "$@"
+}
+
 function newdir {
    (( $# == 1 )) || {
       echo 'usage: newdir <name of new directory>

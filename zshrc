@@ -1752,10 +1752,6 @@ function llwhich {
    ll $(which-if-any $@)
 }
 
-function ag {
-   run-secure-base ag $@ | run-secure-base cat -v
-}
-
 function newdir {
    (( $# == 1 )) || {
       echo 'usage: newdir <name of new directory>

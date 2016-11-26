@@ -160,6 +160,7 @@ local -a precmd_functions
 
 precmd_functions=(
    reset-window-title
+   maybe-exit-after-first-cmd
 )
 
 # Functions to run before a command is executed.
@@ -2026,6 +2027,16 @@ function reset-window-title {
    if [[ $TERM == *xterm* ]] {
          # Clear title.
          echo -n '\e]0;\a'
+   }
+}
+
+function maybe-exit-after-first-cmd {
+   function maybe-exit-after-first-cmd {
+      if (( ZSHRC_EXIT_AFTER_FIRST_CMD )) {
+         builtin exit
+      }
+
+      precmd_functions=(${precmd_functions:#maybe-exit-after-first-cmd})
    }
 }
 

@@ -16,6 +16,5 @@ REPORTTIME_LENGTHY_COMMANDS+=(
 
 export MANWIDTH=$((COLUMNS * 0.75))
 
-alias ':q'='exit'
 
 # Vim: et sw=3

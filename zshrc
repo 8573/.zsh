@@ -1693,6 +1693,10 @@ alias-secure-base gpg2 'gpg2'
 alias-secure-base bt-on 'bluetoothctl <<<"power on"'
 alias-secure-base bt-off 'bluetoothctl <<<"power off"'
 
+function :q {
+   builtin exit 0
+}
+
 function ls {
    local -a ls_cmd gnu_ls_opts
    local color_opt

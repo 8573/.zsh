@@ -1760,6 +1760,22 @@ function e {
    run-secure-base "$cmd" "$@"
 }
 
+function v {
+   local -a choices
+   choices=("${VISUAL%-nofork}" "$VISUAL" "${EDITOR%-nofork}" "$EDITOR")
+   readonly cmd="$(select-secure-cmd -w editor $choices)"
+
+   local -a args
+   args=("$@")
+
+   case "${cmd:t}" {
+      (vim|vim-*)
+         args+='-R';;
+   }
+
+   run-secure-base "$cmd" $args
+}
+
 function newdir {
    (( $# == 1 )) || {
       echo 'usage: newdir <name of new directory>

@@ -1319,7 +1319,7 @@ function set-dynamic-prompts {
 
    readonly unicode_okay=${pstyle[unicode]-${ZSHRC_UNICODE:+yes}}
 
-   readonly hostname=${(q-)HOST%.local} username=${(q-)USERNAME}
+   local hostname=${(q-)HOST%.local} username=${(q-)USERNAME}
 
    if [[ -n $ZSHRC_ANON_PROMPT ]] {
       hostname=''

@@ -1291,6 +1291,7 @@ if [[ -e $ZSHRC_PROMPT_STYLE_FILE ]] {
       #misc-info '%L'
       #unicode yes
       rprompt-abbrev-threshold-term-width-divisor 0
+      nix-shell '%B%F{cyan}[nix-shell]%b%f '
    ) {
       if (( ! ${+ZSHRC_PROMPT_STYLE[$k]} )) {
          eval 'ZSHRC_PROMPT_STYLE[$k]="'"$v"'"'
@@ -1338,8 +1339,10 @@ function set-dynamic-prompts {
 
    readonly cwd_info="${pstyle[info]-}%~%b%f "
 
+   readonly nix_shell_marker="${IN_NIX_SHELL:+${pstyle[nix-shell]}}"
+
    # Main prompt.
-   PS1="${pstyle[main]-}${hostuser_info}${ZSHRC_NO_RPROMPT:+${cwd_info}}%b%f%(!.${pstyle[prompt-sigil-special]-}.${pstyle[prompt-sigil]-})${ZSHRC_PROMPT_SIGIL}%b%f "
+   PS1="${nix_shell_marker}${pstyle[main]-}${hostuser_info}${ZSHRC_NO_RPROMPT:+${cwd_info}}%b%f%(!.${pstyle[prompt-sigil-special]-}.${pstyle[prompt-sigil]-})${ZSHRC_PROMPT_SIGIL}%b%f "
 
    local prev_cmd_status=''
 

@@ -1228,9 +1228,9 @@ typeset -U path fpath manpath
 #{{{ Filter lookup path arrays for security.
 
 # Only include directories that are not (group- or) other-writable...
-   path=(   ${^path}(N/f[o-w]) )
-manpath=(${^manpath}(N/f[o-w]) )
-  fpath=(  ${^fpath}(N/f[go-w]))
+   path=(   ${^path}(N-/f[o-w]) )
+manpath=(${^manpath}(N-/f[o-w]) )
+  fpath=(  ${^fpath}(N-/f[go-w]))
 # ...and are owned by the current user or by root.
    path=(   ${^path}(NU)     ${^path}(Nu0))
 manpath=(${^manpath}(Nu0) ${^manpath}(NU) )

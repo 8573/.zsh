@@ -1761,7 +1761,11 @@ function e {
    choices=("${VISUAL%-nofork}" "$VISUAL" "${EDITOR%-nofork}" "$EDITOR")
    readonly cmd="$(select-secure-cmd -w editor $choices)"
 
-   run-secure-base "$cmd" "$@"
+   if [[ -n "$cmd" ]] {
+      run-secure-base "$cmd" "$@"
+   } else {
+      echo-err 'error: No suitable text editor found'
+   }
 }
 
 function v {
@@ -1777,7 +1781,11 @@ function v {
          args+='-R';;
    }
 
-   run-secure-base "$cmd" $args
+   if [[ -n "$cmd" ]] {
+      run-secure-base "$cmd" "$args"
+   } else {
+      echo-err 'error: No suitable text viewer found'
+   }
 }
 
 function newdir {

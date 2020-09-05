@@ -571,7 +571,7 @@ function get-owner-id {
       stat_arg='-f'
    }
 
-   run-secure-base stat $stat_arg "%${type}" $f
+   command stat $stat_arg "%${type}" $f
 }
 
 function get-owner-uid {
@@ -811,16 +811,20 @@ wherein <command> resides is the first directory in the `PATH`.
    command ${exe:t} ${@:2}
 }
 
-function run-secure-base {
-   emulate -L zsh; set -u
-
-   (( $# >= 1 )) || {
-      echo-help 'Usage: run-secure-base <command> [<argument>...]'
-      return 2
-   }
-
-   run-by-unambiguous-basename $(select-secure-executable -w $1 +) ${@:2}
-}
+# [2020-09-05]  `run-secure-base` is removed because, as I found c. three
+# months ago, `run-by-unambiguous-basename` can confuse programs excessively,
+# perhaps especially on NixOS, where programs may be run more commonly by full
+# paths.
+#function run-secure-base {
+#   emulate -L zsh; set -u
+#
+#   (( $# >= 1 )) || {
+#      echo-help 'Usage: run-secure-base <command> [<argument>...]'
+#      return 2
+#   }
+#
+#   run-by-unambiguous-basename $(select-secure-executable -w $1 +) ${@:2}
+#}
 
 function run-coreutil {
    emulate -L zsh; set -u
@@ -892,13 +896,14 @@ function path-to-MacPorts-GNU-coreutil {
 
 function alias-secure-base {
    (( $# == 2 )) || {
-      echo-help 'Usage: alias-secure-base <name> <command...>'
+      echo-help 'Usage: alias-secure-base <name> <command>'
       return 2
    }
 
    eval "
       function ${(q-)1} {
-         run-secure-base ${@:2} \$@
+         #run-secure-base ${@:2} \$@
+         \"\$(select-secure-executable -w $2 +)\" \$@
       }
    "
 }
@@ -1729,7 +1734,8 @@ function ls {
       ls_cmd+=$color_opt
    }
 
-   run-secure-base $ls_cmd $@
+   #run-secure-base $ls_cmd $@
+   "$(select-secure-executable -w "$ls_cmd" +)" $@
 }
 
 function la {
@@ -1762,7 +1768,7 @@ function e {
    readonly cmd="$(select-secure-cmd -w editor $choices)"
 
    if [[ -n "$cmd" ]] {
-      run-secure-base "$cmd" "$@"
+      "$cmd" "$@"
    } else {
       echo-err 'error: No suitable text editor found'
    }
@@ -1782,7 +1788,7 @@ function v {
    }
 
    if [[ -n "$cmd" ]] {
-      run-secure-base "$cmd" "$args"
+      "$cmd" "$args"
    } else {
       echo-err 'error: No suitable text viewer found'
    }
@@ -1810,7 +1816,8 @@ function ssh {
       return 100
    }
 
-   run-secure-base $cmd $@
+   #run-secure-base $cmd $@
+   "$(select-secure-executable -w "$cmd" +)" $@
 }
 
 function gpg {
@@ -1822,19 +1829,20 @@ function gpg {
       return 100
    }
 
-   run-secure-base $cmd $@
+   #run-secure-base $cmd $@
+   "$(select-secure-executable -w "$cmd" +)" $@
 }
 
 function wiktionary {
-   without-REPORTTIME run-secure-base wiktionary
+   without-REPORTTIME wiktionary
 }
 
 function showterm {
-   in-ghost-shell run-secure-base showterm
+   in-ghost-shell showterm
 }
 
 function asciinema {
-   in-ghost-shell run-secure-base asciinema
+   in-ghost-shell asciinema
 }
 
 function vim-ghost {
@@ -1920,7 +1928,7 @@ function filesize {
    } elif {have-GNU-coreutil stat} {
       run-coreutil stat --format='%s  %n' -- $@
    } else {
-      run-secure-base stat -f '%z  $N' $@
+      command stat -f '%z  $N' $@
    }
 }
 
@@ -1928,7 +1936,7 @@ function filecreationtime {
    if {have-GNU-coreutil stat} {
       run-coreutil stat --format='%w  %n' -- $@
    } else {
-      run-secure-base stat -t '%F %T %z' -f '%SB  %N' $@
+      command stat -t '%F %T %z' -f '%SB  %N' $@
    }
 }
 
@@ -1950,7 +1958,8 @@ function chrome-open {
       return 100
    }
 
-   run-secure-base $cmd
+   #run-secure-base $cmd
+   "$(select-secure-executable -w "$cmd" +)" $@
 }
 
 function optipng-max {

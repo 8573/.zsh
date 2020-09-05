@@ -1693,11 +1693,14 @@ alias-secure-base cp 'cp -i'
 alias-secure-base mv 'mv -i'
 alias-secure-base rm 'rm -I'
 #alias-secure-base git 'TZ=UTC git'
-alias-secure-base ffmpeg 'ffmpeg -v warning'
-alias-secure-base ffplay 'ffplay -v warning'
+#alias-secure-base ffmpeg 'ffmpeg -v warning'
+#alias-secure-base ffplay 'ffplay -v warning'
 alias source-zshrc='source ~/.zshrc'
 #alias cat='echo "\`cat\` has been disabled for security reasons [<https://security.stackexchange.com/a/56309>]; try \`$PAGER\` instead."'
-alias-secure-base cat 'cat -v'
+# [2020-06-22]  That `cat` was aliased to `cat -v` was not helpful when I had
+# to redo the catting of a large, split tarball because I forgot I had aliased
+# `cat`.
+#alias-secure-base cat 'cat -v'
 alias-secure-base vp 'vim-pager'
 alias-secure-base gpg2 'gpg2'
 alias-secure-base bt-on 'bluetoothctl <<<"power on"'
